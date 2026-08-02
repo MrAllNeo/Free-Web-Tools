@@ -18,6 +18,8 @@ export interface User {
   };
 }
 
+export type MediaType = 'video' | 'image' | 'live' | 'none';
+
 export interface Snippet {
   id: string;
   title: string;
@@ -28,9 +30,17 @@ export interface Snippet {
   category: 'frontend' | 'backend' | 'hacking';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[];
+  /**
+   * Snippet'in üstünde ne gösterileceği.
+   * `live` yalnızca frontend kategorisinde kullanılır — kod iframe içinde çalıştırılır.
+   * Backend ve hacking için katkıcı yüklerken video ya da görsel seçer.
+   */
+  mediaType: MediaType;
   videoUrl?: string;
   videoSource: 'youtube' | 'internal';
   videoDurationSeconds?: number;
+  imageUrl?: string;
+  imageCaption?: string;
   documentationUrl?: string;
   prerequisites?: string;
   isExecutable?: boolean;

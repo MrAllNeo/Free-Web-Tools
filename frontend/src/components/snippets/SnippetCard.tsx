@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Eye, Heart, MessageSquare, Play, Star } from 'lucide-react';
+import { Eye, Heart, MessageSquare, Star } from 'lucide-react';
 import { DIFFICULTIES } from '@/lib/constants';
-import { formatDuration, getYouTubeThumbnail } from '@/lib/video';
+import { CardMedia } from './CardMedia';
 import type { Snippet } from '@/lib/types';
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -24,8 +23,6 @@ interface SnippetCardProps {
 
 export function SnippetCard({ snippet, index = 0 }: SnippetCardProps) {
   const difficulty = DIFFICULTIES.find((d) => d.id === snippet.difficulty);
-  const thumbnail = getYouTubeThumbnail(snippet.videoUrl);
-  const duration = formatDuration(snippet.videoDurationSeconds);
   const accent = isHacking(snippet.category) ? 'text-blue-dim' : 'text-amber-dim';
   const hoverBorder = isHacking(snippet.category)
     ? 'hover:border-blue-dim'
@@ -41,28 +38,7 @@ export function SnippetCard({ snippet, index = 0 }: SnippetCardProps) {
         <article
           className={`bg-raised border border-line-soft rounded-md overflow-hidden h-full flex flex-col transition-all duration-150 hover:-translate-y-[3px] ${hoverBorder}`}
         >
-          {/* Video kapağı */}
-          <div className="relative aspect-video bg-inset border-b border-line-soft flex items-center justify-center overflow-hidden">
-            {thumbnail ? (
-              <Image
-                src={thumbnail}
-                alt=""
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
-                className="object-cover opacity-70 transition-opacity group-hover:opacity-100"
-              />
-            ) : null}
-
-            <span className="relative w-10 h-10 rounded-full bg-amber/12 border border-amber-dim flex items-center justify-center text-amber backdrop-blur-sm">
-              <Play className="w-3.5 h-3.5 fill-current" />
-            </span>
-
-            {duration && (
-              <span className="absolute top-2.5 right-2.5 font-mono text-[10.5px] bg-black/60 px-1.5 py-0.5 rounded-xs text-muted">
-                {duration}
-              </span>
-            )}
-          </div>
+          <CardMedia snippet={snippet} />
 
           {/* Gövde */}
           <div className="p-4 flex flex-col flex-1">

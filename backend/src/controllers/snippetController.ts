@@ -25,6 +25,29 @@ async function generateUniqueSlug(title: string): Promise<string> {
   }
 }
 
+type MediaType = 'video' | 'image' | 'live' | 'none';
+
+/**
+ * Gösterim ortamını belirler.
+ *
+ * Frontend snippet'leri ürün kuralı gereği her zaman canlı çalıştırılır — katkıcının
+ * seçimi bu kategoride yok sayılır. Backend ve hacking için seçim katkıcıya aittir;
+ * seçim yapılmamışsa hangi bağlantının verildiğine bakılır.
+ */
+function resolveMediaType(data: {
+  category: string;
+  mediaType?: MediaType;
+  videoUrl?: string;
+  imageUrl?: string;
+}): MediaType {
+  if (data.category === 'frontend') return 'live';
+  if (data.mediaType && data.mediaType !== 'live') return data.mediaType;
+
+  if (data.videoUrl) return 'video';
+  if (data.imageUrl) return 'image';
+  return 'none';
+}
+
 export async function listSnippets(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const query = snippetQuerySchema.parse(req.query);
@@ -67,8 +90,13 @@ export async function listSnippets(req: Request, res: Response, next: NextFuncti
           category: true,
           difficulty: true,
           tags: true,
+          // Frontend kartları kodu iframe içinde canlı gösterdiği için
+          // liste yanıtı kod içeriğini de taşır.
+          codeContent: true,
+          mediaType: true,
           videoUrl: true,
           videoDurationSeconds: true,
+          imageUrl: true,
           viewsCount: true,
           likesCount: true,
           commentsCount: true,
@@ -214,9 +242,12 @@ export async function createSnippet(req: AuthRequest, res: Response, next: NextF
         category: data.category,
         difficulty: data.difficulty,
         tags: data.tags,
+        mediaType: resolveMediaType(data),
         videoUrl: data.videoUrl || null,
         videoSource: data.videoSource,
         videoDurationSeconds: data.videoDurationSeconds,
+        imageUrl: data.imageUrl || null,
+        imageCaption: data.imageCaption || null,
         documentationUrl: data.documentationUrl || null,
         prerequisites: data.prerequisites,
         isExecutable: data.isExecutable,
@@ -270,6 +301,15 @@ export async function updateSnippet(req: AuthRequest, res: Response, next: NextF
     if (data.title && data.title !== existing.title) {
       updateData.slug = await generateUniqueSlug(data.title);
     }
+
+    // Kategori ya da medya alanları değiştiyse gösterim ortamını yeniden çöz;
+    // örneğin backend'den frontend'e taşınan snippet canlı önizlemeye geçmeli.
+    updateData.mediaType = resolveMediaType({
+      category: data.category ?? existing.category,
+      mediaType: data.mediaType,
+      videoUrl: data.videoUrl ?? existing.videoUrl ?? undefined,
+      imageUrl: data.imageUrl ?? existing.imageUrl ?? undefined,
+    });
 
     const snippet = await prisma.snippet.update({
       where: { id },

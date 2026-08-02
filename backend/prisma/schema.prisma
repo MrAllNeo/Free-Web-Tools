@@ -19,6 +19,15 @@ enum Difficulty {
   advanced
 }
 
+/// Bir snippet'in üst kısmında ne gösterileceği.
+/// `live` yalnızca frontend kategorisinde anlamlıdır ve kod iframe içinde çalıştırılır.
+enum MediaType {
+  video
+  image
+  live
+  none
+}
+
 enum VideoSource {
   youtube
   internal
@@ -106,10 +115,15 @@ model Snippet {
   difficulty       Difficulty    @default(beginner)
   tags             String[]
 
-  // Video
+  // Gösterim ortamı.
+  // Frontend snippet'leri her zaman canlı önizlemeyle gösterilir; bu alanlar
+  // backend ve hacking kategorileri için geçerlidir ve katkıcı yüklerken seçer.
+  mediaType            MediaType     @default(video) @map("media_type")
   videoUrl             String?       @map("video_url")
   videoSource          VideoSource   @default(youtube) @map("video_source")
   videoDurationSeconds Int?          @map("video_duration_seconds")
+  imageUrl             String?       @map("image_url")
+  imageCaption         String?       @map("image_caption")
 
   // Documentation
   documentationUrl String? @map("documentation_url")

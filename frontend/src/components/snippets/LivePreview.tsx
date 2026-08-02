@@ -7,9 +7,11 @@ import { buildPreviewDocument, PREVIEW_SANDBOX } from '@/lib/preview';
 interface LivePreviewProps {
   code: string;
   title?: string;
+  /** Saf CSS'i <style> içine sarmak gibi dile özgü hazırlık için gerekli. */
+  language?: string;
 }
 
-export function LivePreview({ code, title = 'önizleme' }: LivePreviewProps) {
+export function LivePreview({ code, title = 'önizleme', language = 'html' }: LivePreviewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -79,7 +81,7 @@ export function LivePreview({ code, title = 'önizleme' }: LivePreviewProps) {
         )}
         <iframe
           key={reloadKey}
-          srcDoc={buildPreviewDocument(code)}
+          srcDoc={buildPreviewDocument(code, language)}
           title="Canlı önizleme"
           className="w-full h-full border-none"
           sandbox={PREVIEW_SANDBOX}

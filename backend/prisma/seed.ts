@@ -846,6 +846,38 @@ export default Modal;
       createdBy: contributor2.id,
     },
     {
+      // Dış bağımlılığı olmayan, canlı önizlemenin anında çalıştığı referans örnek.
+      title: 'Gradient ve Ghost Buton Çifti',
+      description:
+        'Bağımlılıksız, saf CSS ile yazılmış iki buton varyantı. Hover’da yükselen gölge efekti içerir ve canlı önizlemede anında çalışır.',
+      codeContent: `<style>
+  .fwt-demo { font-family: system-ui, sans-serif; display: flex; gap: 16px; }
+  .fwt-btn {
+    padding: 14px 28px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 15px; font-weight: 600; color: #fff;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    box-shadow: 0 4px 14px rgba(102, 126, 234, .4);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .fwt-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(102,126,234,.55); }
+  .fwt-btn.ghost {
+    background: transparent; color: #667eea; border: 2px solid #667eea; box-shadow: none;
+  }
+  .fwt-btn.ghost:hover { background: #667eea; color: #fff; }
+</style>
+
+<div class="fwt-demo">
+  <button class="fwt-btn">Gradient Button</button>
+  <button class="fwt-btn ghost">Ghost Button</button>
+</div>`,
+      codeLanguage: 'html',
+      category: 'frontend',
+      difficulty: 'beginner' as Difficulty,
+      tags: ['css', 'button', 'gradient', 'hover'],
+      isExecutable: true,
+      createdBy: contributor2.id,
+    },
+    {
       title: 'Tailwind CSS Pricing Table',
       description: 'A beautiful 3-tier pricing table built with Tailwind CSS. Features hover effects, highlighted recommended plan, and responsive layout.',
       codeContent: `<!-- Pricing Table with Tailwind CSS -->
@@ -1679,6 +1711,24 @@ if __name__ == "__main__":
   }
 
   console.log('✅ Comments created');
+
+  // Gösterim ortamını kategoriye göre normalleştir.
+  // Frontend snippet'leri kod iframe içinde canlı çalıştırılır; backend ve hacking
+  // kayıtları video ya da görsel gösterir, ikisi de yoksa medya alanı boş kalır.
+  await prisma.snippet.updateMany({
+    where: { category: 'frontend' },
+    data: { mediaType: 'live' },
+  });
+  await prisma.snippet.updateMany({
+    where: { category: { not: 'frontend' }, videoUrl: { not: null } },
+    data: { mediaType: 'video' },
+  });
+  await prisma.snippet.updateMany({
+    where: { category: { not: 'frontend' }, videoUrl: null, imageUrl: null },
+    data: { mediaType: 'none' },
+  });
+
+  console.log('✅ Media types normalised');
   console.log('🎉 Seeding complete!');
 }
 

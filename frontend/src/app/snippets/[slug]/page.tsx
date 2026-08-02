@@ -19,8 +19,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { CodeViewer } from '@/components/snippets/CodeViewer';
-import { VideoPlayer } from '@/components/snippets/VideoPlayer';
-import { LivePreview } from '@/components/snippets/LivePreview';
+import { SnippetMedia, mediaHeading } from '@/components/snippets/SnippetMedia';
 import { CommentSection } from '@/components/snippets/CommentSection';
 import { InteractionButtons } from '@/components/snippets/InteractionButtons';
 import { DIFFICULTIES } from '@/lib/constants';
@@ -166,22 +165,10 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
             transition={{ delay: 0.1 }}
           >
             <h2 className="font-mono text-[13px] text-dim uppercase tracking-[0.08em] mb-3">
-              {snippet.category === 'frontend' ? 'Canlı önizleme' : 'Video anlatım'}
+              {mediaHeading(snippet)}
             </h2>
 
-            {snippet.category === 'frontend' ? (
-              <LivePreview code={snippet.codeContent} title={snippet.title} />
-            ) : snippet.videoUrl ? (
-              <VideoPlayer url={snippet.videoUrl} title={snippet.title} />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[420px] bg-raised border border-line-soft rounded-md text-center p-8">
-                <div className="font-mono text-[28px] text-dim mb-3">∅</div>
-                <h3 className="font-mono text-[14px] font-semibold mb-1.5">Görsel içerik yok</h3>
-                <p className="text-[12.5px] text-muted max-w-xs">
-                  Bu snippet için canlı önizleme veya video anlatım bulunmuyor.
-                </p>
-              </div>
-            )}
+            <SnippetMedia snippet={snippet} />
           </motion.div>
 
           <motion.div

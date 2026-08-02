@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
@@ -23,7 +23,10 @@ const formSchema = z.object({
   category: z.enum(['frontend', 'backend', 'hacking']),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
   tagsInput: z.string().optional(),
+  mediaType: z.enum(['video', 'image', 'none']),
   videoUrl: z.string().url('Geçerli bir URL girin').optional().or(z.literal('')),
+  imageUrl: z.string().url('Geçerli bir URL girin').optional().or(z.literal('')),
+  imageCaption: z.string().max(300).optional(),
   prerequisites: z.string().optional(),
 });
 
@@ -41,10 +44,18 @@ export default function NewSnippetPage() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { category: 'frontend', difficulty: 'beginner', codeLanguage: 'html' },
+    defaultValues: {
+      category: 'frontend',
+      difficulty: 'beginner',
+      codeLanguage: 'html',
+      mediaType: 'video',
+    },
   });
 
   const category = watch('category');
+  const mediaType = watch('mediaType');
+  // Frontend snippet'leri her zaman canlı çalıştırılır; seçici yalnızca diğerlerinde anlamlı.
+  const isLive = category === 'frontend';
 
   // Snippet oluşturma yetkisi backend'de contributor/admin ile sınırlı;
   // formu boşuna doldurtmamak için giriş yapmamış kullanıcı girişe yönlendirilir.
@@ -71,7 +82,11 @@ export default function NewSnippetPage() {
         category: data.category,
         difficulty: data.difficulty,
         tags,
-        videoUrl: data.videoUrl || undefined,
+        // Frontend'de sunucu zaten 'live'a çeviriyor; yine de niyeti açıkça gönderiyoruz.
+        mediaType: isLive ? 'live' : data.mediaType,
+        videoUrl: data.mediaType === 'video' ? data.videoUrl || undefined : undefined,
+        imageUrl: data.mediaType === 'image' ? data.imageUrl || undefined : undefined,
+        imageCaption: data.mediaType === 'image' ? data.imageCaption || undefined : undefined,
         prerequisites: data.prerequisites || undefined,
       });
 
@@ -203,21 +218,96 @@ export default function NewSnippetPage() {
           </div>
         </Card>
 
-        {/* Medya */}
+        {/* Gösterim */}
         <Card className="p-6">
           <h2 className="font-mono text-[13px] text-dim uppercase tracking-[0.08em] pb-4 mb-5 border-b border-line-soft">
-            Video ve ek bilgiler
+            Gösterim ve ek bilgiler
           </h2>
 
+          {isLive ? (
+            <div className="flex gap-3 mb-5 p-4 bg-green/8 border border-green-dim/40 rounded-sm">
+              <Sparkles className="w-4 h-4 text-green shrink-0 mt-0.5" />
+              <p className="text-[12.5px] text-muted">
+                <strong className="text-fg">Frontend snippet&apos;leri canlı gösterilir.</strong>{' '}
+                Kodun hem detay sayfasında hem de listedeki kartta bir çerçeve içinde gerçekten
+                çalışır — video ya da ekran görüntüsü eklemene gerek yok.
+              </p>
+            </div>
+          ) : (
+            <div className="mb-5">
+              <span className="block font-mono text-[11.5px] text-dim mb-2">
+                Bu snippet nasıl gösterilsin?
+              </span>
+              <div className="grid sm:grid-cols-3 gap-2">
+                {[
+                  { value: 'video', label: 'Video', hint: 'YouTube anlatımı' },
+                  { value: 'image', label: 'Görsel', hint: 'Ekran görüntüsü / diyagram' },
+                  { value: 'none', label: 'Yok', hint: 'Yalnızca kod' },
+                ].map((option) => (
+                  <label
+                    key={option.value}
+                    className={`flex flex-col gap-0.5 px-3 py-2.5 rounded-sm border cursor-pointer transition-colors ${
+                      mediaType === option.value
+                        ? 'border-green bg-green/8'
+                        : 'border-line hover:border-green-dim'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value={option.value}
+                        {...register('mediaType')}
+                        className="w-3.5 h-3.5"
+                      />
+                      <span className="font-mono text-[12.5px]">{option.label}</span>
+                    </span>
+                    <span className="text-[11px] text-dim pl-5">{option.hint}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
-            <Field label="YouTube video adresi" htmlFor="videoUrl" error={errors.videoUrl?.message}>
-              <Input
-                id="videoUrl"
-                type="url"
-                {...register('videoUrl')}
-                placeholder="https://www.youtube.com/watch?v=…"
-              />
-            </Field>
+            {!isLive && mediaType === 'video' && (
+              <Field
+                label="YouTube video adresi"
+                htmlFor="videoUrl"
+                error={errors.videoUrl?.message}
+              >
+                <Input
+                  id="videoUrl"
+                  type="url"
+                  {...register('videoUrl')}
+                  placeholder="https://www.youtube.com/watch?v=…"
+                />
+              </Field>
+            )}
+
+            {!isLive && mediaType === 'image' && (
+              <>
+                <Field label="Görsel adresi" htmlFor="imageUrl" error={errors.imageUrl?.message}>
+                  <Input
+                    id="imageUrl"
+                    type="url"
+                    {...register('imageUrl')}
+                    placeholder="https://ornek.com/ekran-goruntusu.png"
+                  />
+                </Field>
+
+                <Field
+                  label="Görsel açıklaması"
+                  htmlFor="imageCaption"
+                  hint="görselin altında gösterilir"
+                >
+                  <Input
+                    id="imageCaption"
+                    {...register('imageCaption')}
+                    placeholder="Nmap taraması sonucu"
+                  />
+                </Field>
+              </>
+            )}
 
             <Field label="Ön koşullar" htmlFor="prerequisites">
               <Textarea

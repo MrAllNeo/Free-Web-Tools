@@ -55,9 +55,14 @@ export const createSnippetSchema = z.object({
   category: z.enum(['frontend', 'backend', 'hacking']),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']).default('beginner'),
   tags: z.array(z.string()).default([]),
+  // Frontend snippet'leri canlı çalıştırılır; backend/hacking için katkıcı
+  // video mu görsel mi göstereceğini kendisi seçer.
+  mediaType: z.enum(['video', 'image', 'live', 'none']).optional(),
   videoUrl: z.string().url().optional().or(z.literal('')),
   videoSource: z.enum(['youtube', 'internal']).default('youtube'),
   videoDurationSeconds: z.number().int().positive().optional(),
+  imageUrl: z.string().url().optional().or(z.literal('')),
+  imageCaption: z.string().max(300).optional(),
   documentationUrl: z.string().url().optional().or(z.literal('')),
   prerequisites: z.string().optional(),
   isExecutable: z.boolean().optional(),
