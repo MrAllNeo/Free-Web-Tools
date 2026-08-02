@@ -115,8 +115,25 @@ Run these from the repository root — each one delegates to the right workspace
 | `npm run db:push` | Sync the Prisma schema to the database |
 | `npm run db:seed` | Reset and reload demo data |
 | `npm run db:studio` | Open Prisma Studio to browse the database |
+| `npm run clean` | Delete `frontend/.next` and `backend/dist` |
 
 Append `:frontend` or `:backend` to `dev`, `build` or `start` to run only one side — for example `npm run dev:backend`.
+
+### If pages start returning 404 or 500
+
+Turbopack keeps a persistent cache in `frontend/.next`. If two dev servers run against
+the same checkout, or a dev server is killed mid-write, that cache can be left corrupted —
+routes then fail one by one as they are compiled, with `TurbopackInternalError: Failed to
+restore task data` in `frontend/.next/dev/logs/next-development.log`.
+
+Recovery is always the same:
+
+```bash
+npm run clean && npm run dev
+```
+
+Make sure only one dev server is running first — `npm run dev` refuses to start a second
+one, but an orphaned process from a previous session can still hold the cache open.
 
 ## Project structure
 
