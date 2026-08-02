@@ -23,7 +23,7 @@ Most code-sharing sites give you a wall of text with no context, or a video with
 - **📹 Every snippet has a video** — contributors record a walkthrough (YouTube embed or direct upload) alongside the code they publish.
 - **🧪 Frontend code is testable** — not a read-only gist. Snippets render live in a sandboxed iframe you can reload and open fullscreen.
 - **🛡️ Hacking content is educational-only** — locked from execution, reviewed before publishing, with automated flagging for anything resembling malware or exploits.
-- **🧰 Instant utilities, zero friction** — a growing toolbox that needs no account and, for 12 of the 13 tools, never sends your data to a server.
+- **🧰 Instant utilities, zero friction** — thirteen tools that need no account and, for twelve of them, never send your data to a server.
 - **🌍 Built by and for the community** — contributors earn reputation for sharing quality content.
 
 ## The four sections
@@ -39,21 +39,23 @@ Most code-sharing sites give you a wall of text with no context, or a video with
 
 Thirteen single-purpose utilities, each on its own SEO-friendly route at `/tools/<slug>`.
 
-| Tool | Runs where | Status |
-|------|-----------|--------|
-| Password Generator | Browser | ✅ Live |
-| UUID Generator | Browser | ✅ Live |
-| Color Converter (HEX/RGB/HSL) | Browser | ✅ Live |
-| JSON Formatter / Validator | Browser | 🚧 Planned |
-| Hash Generator (MD5/SHA-256/SHA-512) | Browser | 🚧 Planned |
-| Base64 Encode / Decode | Browser | 🚧 Planned |
-| Regex Tester | Browser | 🚧 Planned |
-| Markdown → HTML Preview | Browser | 🚧 Planned |
-| Diff Checker | Browser | 🚧 Planned |
-| Cron Expression Generator | Browser | 🚧 Planned |
-| QR Code Generator | Browser | 🚧 Planned |
-| Image to Base64 | Browser | 🚧 Planned |
-| Link Shortener | Server | 🚧 Planned |
+| Tool | Runs where |
+|------|-----------|
+| JSON Formatter / Validator | Browser |
+| UUID Generator | Browser |
+| Password Generator | Browser |
+| Hash Generator (MD5/SHA-1/SHA-256/SHA-512) | Browser |
+| Base64 Encode / Decode | Browser |
+| Color Converter (HEX/RGB/HSL) | Browser |
+| Regex Tester | Browser |
+| Markdown → HTML Preview | Browser |
+| Diff Checker | Browser |
+| Cron Expression Generator | Browser |
+| QR Code Generator | Browser |
+| Image to Base64 | Browser |
+| Link Shortener | Server |
+
+All thirteen are live. Twelve run entirely in your browser — no account, no upload, no request leaves the page. Only the link shortener needs a server, because a short code has to be stored somewhere.
 
 Passwords are generated with `crypto.getRandomValues` and rejection sampling — no modulo bias, no network round-trip, ever.
 
@@ -142,23 +144,40 @@ GET    /api/auth/me              Current user
 
 GET    /api/snippets             List (pagination, filters, search, sort)
 GET    /api/snippets/stats       Totals, per-category counts, average rating
-GET    /api/snippets/:idOrSlug   Snippet detail with comments
+GET    /api/snippets/:idOrSlug   Snippet detail
 POST   /api/snippets             Create (contributors and admins)
 PUT    /api/snippets/:id         Update (owner)
 DELETE /api/snippets/:id         Delete (owner or admin)
 
+GET    /api/snippets/:id/comments      Comment thread with replies
+POST   /api/snippets/:id/comments      Add a comment, optionally with a rating
+POST   /api/snippets/:id/like          Toggle like
+POST   /api/snippets/:id/save          Toggle bookmark
+GET    /api/snippets/:id/interaction   Your like/save state
+
 PUT    /api/users/me             Update your profile
+GET    /api/users/me/saved       Your bookmarked snippets
+DELETE /api/users/comments/:id   Delete a comment (owner or admin)
+
+POST   /api/links/shorten        Shorten a URL (guests allowed)
+GET    /api/links/:slug          Resolve and count a click
+GET    /api/links/stats/:slug    Click stats for a short link
+
+GET    /api/admin/snippets/pending     Moderation queue
+PUT    /api/admin/snippets/:id/status  Approve or reject
+GET    /api/admin/analytics            Platform totals and top snippets
 ```
 
-Comments, likes/saves, moderation, and the link-shortener endpoints are the next milestone.
+Posting a rating recalculates the snippet's average automatically, and an approval grants the contributor reputation.
 
 ## Roadmap
 
 - [x] **Phase 1** — Design system, landing page, snippet archive and detail, auth flow
-- [x] **Phase 2** — Utilities section with the first three live tools
-- [ ] **Phase 3** — Remaining ten tools, comments and ratings, likes and bookmarks
-- [ ] **Phase 4** — Moderation pipeline for the Hacking section, admin analytics
-- [ ] **Phase 5** — Video uploads, newsletter, search at scale
+- [x] **Phase 2** — Utilities section, first live tools
+- [x] **Phase 3** — All thirteen tools shipped
+- [x] **Phase 4** — Comments and ratings, likes and bookmarks, moderation queue, admin analytics, link shortener
+- [x] **Phase 5** — Sitemap, robots, per-page SEO metadata
+- [ ] **Next** — Video uploads, public profiles, newsletter, search at scale
 
 ## Content policy
 

@@ -72,8 +72,27 @@ model User {
   comments      Comment[]
   interactions  UserInteraction[]
   contributions ContributionHistory[]
+  shortLinks    ShortLink[]
 
   @@map("users")
+}
+
+model ShortLink {
+  id          String    @id @default(uuid())
+  originalUrl String    @map("original_url")
+  slug        String    @unique @db.VarChar(16)
+  // Misafirler de link kısaltabilir, bu yüzden sahiplik opsiyonel.
+  userId      String?   @map("user_id")
+  clickCount  Int       @default(0) @map("click_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  expiresAt   DateTime? @map("expires_at")
+
+  // Kullanıcı silinse de kısa link çalışmaya devam etmeli.
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([slug])
+  @@index([userId])
+  @@map("short_links")
 }
 
 model Snippet {

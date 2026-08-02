@@ -16,6 +16,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Alt sayfalardaki göreli canonical adreslerinin çözülebilmesi için gerekli.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: {
     default: "Free Web Tools — Kodu gör, videoda çalışırken izle",
     template: "%s | Free Web Tools",

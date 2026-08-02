@@ -87,7 +87,7 @@ export const TOOLS: ToolMeta[] = [
     description:
       'JSON verinizi girintileyip renklendirir, hatalıysa satır ve sütun bilgisiyle nerede bozulduğunu gösterir.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['json formatter', 'json validator', 'json güzelleştirici'],
   },
   {
@@ -118,7 +118,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'MD5 / SHA-256 / SHA-512',
     description: 'Girdiğiniz metnin seçtiğiniz algoritmaya göre özetini tarayıcıda hesaplar.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['hash generator', 'md5', 'sha256 hesapla'],
   },
   {
@@ -128,7 +128,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'Encode / Decode',
     description: 'Metni veya dosyayı Base64 formatına çevirir, Base64 metni geri çözer.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['base64 encode', 'base64 decode', 'base64 çevirici'],
   },
   {
@@ -138,7 +138,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'HEX / RGB / HSL',
     description: 'Renk kodlarını formatlar arasında anında çevirir ve canlı önizleme gösterir.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['hex to rgb', 'renk çevirici', 'hsl dönüştürücü'],
   },
   {
@@ -148,7 +148,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'Canlı eşleşme',
     description: 'Regex desenini test metniyle karşılaştırır, eşleşmeleri anında vurgular.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['regex test', 'regex tester', 'düzenli ifade'],
   },
   {
@@ -158,7 +158,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'Canlı HTML önizleme',
     description: 'Solda markdown yazın, sağda render edilmiş HTML çıktısını anında görün.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['markdown preview', 'markdown to html', 'md önizleme'],
   },
   {
@@ -168,7 +168,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'İki metni karşılaştır',
     description: 'İki metin arasındaki farkları satır ve kelime bazında renkli olarak gösterir.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['diff checker', 'metin karşılaştırma', 'fark bulma'],
   },
   {
@@ -179,7 +179,7 @@ export const TOOLS: ToolMeta[] = [
     description:
       'Form ile cron ifadesi oluşturur; elle girilen ifadenin okunabilir açıklamasını da verir.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['cron generator', 'crontab', 'cron ifadesi'],
   },
   {
@@ -189,7 +189,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'Metin / URL → QR',
     description: 'Metin veya bağlantıdan anında QR kod üretir, PNG veya SVG olarak indirilir.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['qr kod üret', 'qr generator', 'qr code oluştur'],
   },
   {
@@ -199,7 +199,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'Görsel → data URI',
     description: 'Sürükle-bırak ile görseli Base64 data URI formatına çevirir.',
     needsBackend: false,
-    ready: false,
+    ready: true,
     keywords: ['image to base64', 'görsel base64', 'data uri'],
   },
   {
@@ -209,7 +209,7 @@ export const TOOLS: ToolMeta[] = [
     short: 'Uzun URL → kısa link',
     description: 'Uzun bağlantıları kısa ve paylaşılabilir hale getirir, tıklanma sayısını tutar.',
     needsBackend: true,
-    ready: false,
+    ready: true,
     keywords: ['link kısaltma', 'url shortener', 'kısa link'],
   },
 ];

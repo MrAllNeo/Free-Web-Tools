@@ -25,6 +25,23 @@ export const updateProfileSchema = z.object({
   websiteUrl: z.string().url().optional().or(z.literal('')),
 });
 
+export const createCommentSchema = z.object({
+  content: z.string().min(1, 'Comment cannot be empty').max(2000, 'Comment is too long'),
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+  parentCommentId: z.string().uuid().optional(),
+});
+
+export const moderateSnippetSchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+  rejectionReason: z.string().max(500).optional(),
+});
+
+export const shortenUrlSchema = z.object({
+  url: z.string().min(1, 'URL is required'),
+  // Süresiz linkler kalıcı olarak veritabanında birikir; 1-365 gün arası sınır konulabilir.
+  expiresInDays: z.coerce.number().int().min(1).max(365).optional(),
+});
+
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),

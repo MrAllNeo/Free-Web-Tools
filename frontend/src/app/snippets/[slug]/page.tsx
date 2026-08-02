@@ -9,7 +9,6 @@ import { tr } from 'date-fns/locale';
 import {
   ArrowLeft,
   BookOpen,
-  Bookmark,
   Calendar,
   Eye,
   Heart,
@@ -22,9 +21,11 @@ import { api } from '@/lib/api';
 import { CodeViewer } from '@/components/snippets/CodeViewer';
 import { VideoPlayer } from '@/components/snippets/VideoPlayer';
 import { LivePreview } from '@/components/snippets/LivePreview';
+import { CommentSection } from '@/components/snippets/CommentSection';
+import { InteractionButtons } from '@/components/snippets/InteractionButtons';
 import { DIFFICULTIES } from '@/lib/constants';
 import { Container } from '@/components/ui/Container';
-import { Button, ButtonLink } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Panel';
 import type { Snippet } from '@/lib/types';
@@ -114,17 +115,11 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
               )}
             </div>
 
-            {/* Beğeni/kaydetme uç noktaları Faz 4'te bağlanacak */}
-            <div className="flex items-center gap-2">
-              <Button size="sm" disabled title="Yakında">
-                <Heart className="w-3.5 h-3.5" />
-                Beğen
-              </Button>
-              <Button size="sm" disabled title="Yakında">
-                <Bookmark className="w-3.5 h-3.5" />
-                Kaydet
-              </Button>
-            </div>
+            <InteractionButtons
+              snippetId={snippet.id}
+              snippetSlug={snippet.slug}
+              likesCount={snippet.likesCount}
+            />
           </div>
 
           <h1 className="font-mono text-[26px] sm:text-[32px] font-bold leading-[1.18] tracking-[-0.02em] mb-3">
@@ -221,63 +216,7 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
               </Card>
             )}
 
-            <div>
-              <div className="flex items-center justify-between gap-4 mb-5">
-                <h2 className="font-mono text-[16px] font-semibold">
-                  Yorumlar ({snippet.comments?.length ?? 0})
-                </h2>
-                {/* Yorum yazma uç noktası Faz 4'te eklenecek */}
-                <Button size="sm" disabled title="Yakında">
-                  Yorum yaz
-                </Button>
-              </div>
-
-              {snippet.comments && snippet.comments.length > 0 ? (
-                <div className="space-y-3">
-                  {snippet.comments.map((comment) => (
-                    <Card key={comment.id} className="p-5">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="w-8 h-8 rounded-xs bg-amber/15 border border-amber-dim flex items-center justify-center text-amber font-mono text-[12px] font-bold shrink-0">
-                            {comment.user.username[0].toUpperCase()}
-                          </span>
-                          <div>
-                            <span className="block font-mono text-[12.5px] font-semibold">
-                              @{comment.user.username}
-                            </span>
-                            <span className="font-mono text-[11px] text-dim">
-                              {timeAgo(comment.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {comment.rating && (
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i < comment.rating! ? 'text-amber fill-amber' : 'text-line'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[13.5px] text-muted leading-relaxed">{comment.content}</p>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 border border-dashed border-line rounded-md">
-                  <MessageSquare className="w-8 h-8 text-dim mx-auto mb-3 opacity-40" />
-                  <h3 className="font-mono text-[13.5px] font-semibold">Henüz yorum yok</h3>
-                  <p className="text-[12.5px] text-muted mt-1">
-                    Bu snippet hakkında ilk düşüncesini paylaşan sen ol.
-                  </p>
-                </div>
-              )}
-            </div>
+            <CommentSection snippetId={snippet.id} snippetSlug={snippet.slug} />
           </div>
 
           {/* Kenar çubuğu */}

@@ -11,7 +11,16 @@ import { useAuthStore } from '@/lib/store';
 import { Container } from '@/components/ui/Container';
 import { Badge } from '@/components/ui/Badge';
 import { Button, ButtonLink } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Panel';
 import type { Snippet } from '@/lib/types';
+
+interface Analytics {
+  users: number;
+  comments: number;
+  shortLinks: number;
+  snippets: Record<string, number>;
+  topSnippets: { id: string; title: string; slug: string; viewsCount: number }[];
+}
 
 export default function AdminDashboardPage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -22,6 +31,13 @@ export default function AdminDashboardPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'pending-snippets'],
     queryFn: () => api.get<{ snippets: Snippet[] }>('/admin/snippets/pending'),
+    enabled: Boolean(isAdmin),
+    retry: false,
+  });
+
+  const { data: analytics } = useQuery<Analytics>({
+    queryKey: ['admin', 'analytics'],
+    queryFn: () => api.get<Analytics>('/admin/analytics'),
     enabled: Boolean(isAdmin),
     retry: false,
   });
@@ -65,7 +81,27 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="py-8">
+      <div className="py-8 space-y-6">
+        {/* Platform özeti */}
+        {analytics && (
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+            {[
+              { label: 'Kullanıcı', value: analytics.users, tone: 'text-fg' },
+              { label: 'Yayında', value: analytics.snippets.approved ?? 0, tone: 'text-green' },
+              { label: 'Beklemede', value: analytics.snippets.pending ?? 0, tone: 'text-amber' },
+              { label: 'Yorum', value: analytics.comments, tone: 'text-fg' },
+              { label: 'Kısa link', value: analytics.shortLinks, tone: 'text-blue' },
+            ].map((stat) => (
+              <Card key={stat.label} className="p-4">
+                <div className={`font-mono text-[22px] font-bold ${stat.tone}`}>{stat.value}</div>
+                <div className="font-mono text-[10.5px] text-dim uppercase tracking-[0.06em] mt-1">
+                  {stat.label}
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
         <div className="bg-raised border border-line rounded-md overflow-hidden">
           <div className="px-5 py-4 border-b border-line-soft bg-inset flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber" />
@@ -80,11 +116,7 @@ export default function AdminDashboardPage() {
           ) : error ? (
             <div className="p-10 text-center">
               <p className="font-mono text-[13px] text-danger mb-2">Moderasyon kuyruğu alınamadı</p>
-              <p className="text-[12.5px] text-muted max-w-lg mx-auto">
-                <code className="font-mono text-amber">/api/admin/snippets/pending</code> uç noktası
-                henüz backend&apos;de tanımlı değil — Faz 4&apos;te eklenecek.
-              </p>
-              <p className="font-mono text-[11.5px] text-dim mt-3">
+              <p className="font-mono text-[11.5px] text-dim">
                 {getApiErrorMessage(error, 'Bilinmeyen hata')}
               </p>
             </div>

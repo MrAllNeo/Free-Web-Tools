@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import { authRouter } from './routes/auth';
 import { snippetRouter } from './routes/snippets';
 import { userRouter } from './routes/users';
+import { linkRouter } from './routes/links';
+import { adminRouter } from './routes/admin';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
@@ -38,6 +40,8 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/snippets', snippetRouter);
 app.use('/api/users', userRouter);
+app.use('/api/links', linkRouter);
+app.use('/api/admin', adminRouter);
 
 // 404 handler
 app.use((_req, res) => {
