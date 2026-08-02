@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  guest
+  user
+  contributor
+  admin
+}
+
+enum Difficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum VideoSource {
+  youtube
+  internal
+}
+
+enum SnippetStatus {
+  draft
+  pending
+  approved
+  rejected
+}
+
+enum CommentStatus {
+  pending
+  approved
+  rejected
+}
+
+enum InteractionAction {
+  like
+  save
+  report
+  view
+}
+
+enum ContributionAction {
+  uploaded
+  updated
+  reported
+  reviewed
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  username        String    @unique
+  passwordHash    String    @map("password_hash")
+  fullName        String?   @map("full_name")
+  bio             String?
+  role            Role      @default(user)
+  reputationScore Int       @default(0) @map("reputation_score")
+  profileVerified Boolean   @default(false) @map("profile_verified")
+  avatarUrl       String?   @map("avatar_url")
+  githubUrl       String?   @map("github_url")
+  websiteUrl      String?   @map("website_url")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  lastLogin       DateTime? @map("last_login")
+
+  snippets      Snippet[]
+  comments      Comment[]
+  interactions  UserInteraction[]
+  contributions ContributionHistory[]
+
+  @@map("users")
+}
+
+model Snippet {
+  id               String        @id @default(uuid())
+  title            String
+  slug             String        @unique
+  description      String?
+  codeContent      String        @map("code_content")
+  codeLanguage     String        @map("code_language")
+  category         String        // frontend, backend, hacking
+  difficulty       Difficulty    @default(beginner)
+  tags             String[]
+
+  // Video
+  videoUrl             String?       @map("video_url")
+  videoSource          VideoSource   @default(youtube) @map("video_source")
+  videoDurationSeconds Int?          @map("video_duration_seconds")
+
+  // Documentation
+  documentationUrl String? @map("documentation_url")
+  prerequisites    String?
+
+  // Code Properties
+  isExecutable Boolean? @map("is_executable")
+  canDownload  Boolean  @default(true) @map("can_download")
+
+  // Metadata
+  createdBy     String @map("created_by")
+  viewsCount    Int    @default(0) @map("views_count")
+  likesCount    Int    @default(0) @map("likes_count")
+  commentsCount Int    @default(0) @map("comments_count")
+  averageRating Float  @default(0) @map("average_rating")
+
+  // Status
+  status          SnippetStatus @default(pending)
+  rejectionReason String?       @map("rejection_reason")
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
+
+  // Relations
+  author       User              @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  interactions UserInteraction[]
+  contributions ContributionHistory[]
+
+  @@index([category])
+  @@index([codeLanguage])
+  @@index([createdBy])
+  @@index([slug])
+  @@map("snippets")
+}
+
+model Comment {
+  id              String        @id @default(uuid())
+  snippetId       String        @map("snippet_id")
+  userId          String        @map("user_id")
+  parentCommentId String?       @map("parent_comment_id")
+  content         String
+  rating          Int?
+  helpfulCount    Int           @default(0) @map("helpful_count")
+  unhelpfulCount  Int           @default(0) @map("unhelpful_count")
+  status          CommentStatus @default(approved)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  snippet       Snippet   @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentComment Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies       Comment[] @relation("CommentReplies")
+
+  @@index([snippetId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model UserInteraction {
+  id        String            @id @default(uuid())
+  userId    String            @map("user_id")
+  snippetId String            @map("snippet_id")
+  action    InteractionAction
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snippet Snippet @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, snippetId, action])
+  @@index([userId])
+  @@index([snippetId])
+  @@map("user_interactions")
+}
+
+model ContributionHistory {
+  id        String             @id @default(uuid())
+  userId    String             @map("user_id")
+  snippetId String             @map("snippet_id")
+  action    ContributionAction
+  details   Json?
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id])
+  snippet Snippet @relation(fields: [snippetId], references: [id])
+
+  @@map("contribution_history")
+}
