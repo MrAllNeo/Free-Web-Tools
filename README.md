@@ -88,23 +88,35 @@ Snippet cards and code panels are styled like terminal windows, right down to th
 git clone git@github.com:MrAllNeo/Free-Web-Tools.git
 cd Free-Web-Tools
 
-# Install dependencies
-npm install
-(cd frontend && npm install)
-(cd backend && npm install)
+npm run setup                      # install root, frontend and backend deps
 
-# Configure the backend
 cp backend/.env.example backend/.env
-# → fill in DATABASE_URL and JWT_SECRET
+#   → fill in DATABASE_URL and JWT_SECRET
 
-# Set up the database
-(cd backend && npx prisma db push && npm run seed)
+npm run db:push                    # create the tables
+npm run db:seed                    # load demo users and snippets
 
-# Run both servers (frontend :3000, backend :3001)
-npm run dev
+npm run dev                        # frontend :3000, backend :3001
 ```
 
 The seed creates a demo admin account: `admin@freewebtools.dev` / `Admin123!@#`.
+
+### All scripts
+
+Run these from the repository root — each one delegates to the right workspace.
+
+| Script | What it does |
+|--------|--------------|
+| `npm run dev` | Both servers with hot reload, logs colour-coded per side |
+| `npm run build` | Compiles the backend to `dist/`, then builds the Next.js app |
+| `npm start` | Runs the production build of both servers |
+| `npm run typecheck` | `tsc --noEmit` across frontend and backend |
+| `npm run lint` | ESLint over the frontend |
+| `npm run db:push` | Sync the Prisma schema to the database |
+| `npm run db:seed` | Reset and reload demo data |
+| `npm run db:studio` | Open Prisma Studio to browse the database |
+
+Append `:frontend` or `:backend` to `dev`, `build` or `start` to run only one side — for example `npm run dev:backend`.
 
 ## Project structure
 
