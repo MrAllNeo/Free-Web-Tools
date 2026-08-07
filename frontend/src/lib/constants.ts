@@ -38,6 +38,10 @@ export const NAV_SECTIONS = [
 export const LANGUAGES = [
   'javascript',
   'typescript',
+  // JSX/TSX önizlemede derlenip çalıştırılabiliyor; dil listesinde karşılıkları
+  // olmadığı için katkıcılar React kodunu 'typescript' diye işaretlemek zorundaydı.
+  'jsx',
+  'tsx',
   'python',
   'css',
   'html',

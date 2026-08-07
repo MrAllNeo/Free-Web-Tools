@@ -20,6 +20,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   codeContent: z.string().min(1, 'Kod içeriği zorunlu'),
   codeLanguage: z.string().min(1, 'Dil zorunlu'),
+  demoHtml: z.string().max(20000, 'Demo HTML çok uzun').optional(),
   category: z.enum(['frontend', 'backend', 'hacking']),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
   tagsInput: z.string().optional(),
@@ -79,6 +80,8 @@ export default function NewSnippetPage() {
         description: data.description || undefined,
         codeContent: data.codeContent,
         codeLanguage: data.codeLanguage.trim().toLowerCase(),
+        // Demo markup yalnızca canlı önizlemede anlamlı; diğer kategorilerde gönderilmez.
+        demoHtml: isLive ? data.demoHtml?.trim() || undefined : undefined,
         category: data.category,
         difficulty: data.difficulty,
         tags,
@@ -181,11 +184,15 @@ export default function NewSnippetPage() {
           {category === 'frontend' && (
             <div className="flex gap-3 mb-5 p-4 bg-blue/8 border border-blue-dim/40 rounded-sm">
               <AlertCircle className="w-4 h-4 text-blue shrink-0 mt-0.5" />
-              <p className="text-[12.5px] text-muted">
-                <strong className="text-fg">Canlı önizleme için:</strong> tam bir HTML belgesi ver
-                ya da stil ve script&apos;leri satır içi{' '}
+              <p className="text-[12.5px] text-muted leading-relaxed">
+                <strong className="text-fg">Canlı önizleme:</strong> tam HTML belgesi, React/JSX
+                bileşeni ve satır içi{' '}
                 <code className="font-mono text-blue">&lt;style&gt;</code> /{' '}
-                <code className="font-mono text-blue">&lt;script&gt;</code> etiketleriyle ekle.
+                <code className="font-mono text-blue">&lt;script&gt;</code> içeren markup doğrudan
+                çalışır. React bileşenini{' '}
+                <code className="font-mono text-blue">export default</code> ile dışa aktarırsan
+                önizleme onu bulur. Yalnızca CSS ya da JS paylaşıyorsan aşağıdaki{' '}
+                <strong className="text-fg">demo HTML</strong> alanını doldur.
               </p>
             </div>
           )}
@@ -215,6 +222,29 @@ export default function NewSnippetPage() {
                 className="!bg-inset min-h-[300px]"
               />
             </Field>
+
+            {/*
+              Saf CSS ya da DOM'a bağlı JS tek başına ekranda hiçbir şey göstermez.
+              Hangi markup'ın onu görünür kıldığını kodu yazan en iyi bilir — tahmin
+              yürütmek yerine soruyoruz.
+            */}
+            {category === 'frontend' && (
+              <Field
+                label="Demo HTML"
+                htmlFor="demoHtml"
+                hint="isteğe bağlı — yalnızca CSS/JS paylaşıyorsan doldur"
+                error={errors.demoHtml?.message}
+              >
+                <Textarea
+                  id="demoHtml"
+                  rows={6}
+                  spellCheck={false}
+                  {...register('demoHtml')}
+                  placeholder={'<button class="btn">Tıkla</button>'}
+                  className="!bg-inset"
+                />
+              </Field>
+            )}
           </div>
         </Card>
 

@@ -3,7 +3,7 @@
 import { Wrench } from 'lucide-react';
 import { LivePreview } from './LivePreview';
 import { VideoPlayer } from './VideoPlayer';
-import { canRenderLive } from '@/lib/preview';
+import { liveBlocker } from '@/lib/preview';
 import type { Snippet } from '@/lib/types';
 
 /**
@@ -20,27 +20,41 @@ export function SnippetMedia({ snippet }: { snippet: Snippet }) {
     (snippet.category === 'frontend' ? 'live' : snippet.videoUrl ? 'video' : 'none');
 
   if (mediaType === 'live') {
-    if (canRenderLive(snippet.codeContent, snippet.codeLanguage)) {
+    const blocker = liveBlocker(snippet.codeContent, snippet.codeLanguage, snippet.demoHtml);
+
+    if (!blocker) {
       return (
         <LivePreview
           code={snippet.codeContent}
           title={snippet.title}
           language={snippet.codeLanguage}
+          demoHtml={snippet.demoHtml}
         />
       );
     }
 
-    // React/TSX gibi derleme gerektiren kod tarayıcıda olduğu gibi çalışmaz.
-    // Sessizce boş bir çerçeve göstermek yerine nedenini açıkça söylüyoruz.
+    // Sessizce boş bir çerçeve göstermek yerine nedenini açıkça söylüyoruz —
+    // ve eksiklik giderilebilir bir şeyse nasıl giderileceğini de.
     return (
       <div className="flex flex-col items-center justify-center h-[420px] bg-raised border border-line-soft rounded-md text-center p-8">
         <Wrench className="w-7 h-7 text-dim mb-4" />
         <h3 className="font-mono text-[14px] font-semibold mb-2">Canlı önizleme yok</h3>
         <p className="text-[12.5px] text-muted max-w-sm leading-relaxed">
-          Bu snippet{' '}
-          <span className="font-mono text-amber">{snippet.codeLanguage}</span> ile yazılmış ve
-          tarayıcıda çalışabilmesi için derlenmesi gerekiyor. Kodu sağdaki panelden
-          inceleyebilirsin.
+          {blocker === 'needs-demo-html' ? (
+            <>
+              Bu snippet{' '}
+              <span className="font-mono text-amber">{snippet.codeLanguage}</span>{' '}
+              içeriyor ama onu ekranda gösterecek bir demo markup&apos;ı yok. Katkıcı
+              snippet&apos;i düzenleyip{' '}
+              <span className="font-mono text-blue">demo HTML</span> alanını doldurursa önizleme
+              çalışır.
+            </>
+          ) : (
+            <>
+              <span className="font-mono text-amber">{snippet.codeLanguage}</span> tarayıcıda
+              çalıştırılamaz. Kodu sağdaki panelden inceleyebilirsin.
+            </>
+          )}
         </p>
       </div>
     );

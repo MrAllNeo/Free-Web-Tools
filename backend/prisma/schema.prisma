@@ -111,6 +111,12 @@ model Snippet {
   description      String?
   codeContent      String        @map("code_content")
   codeLanguage     String        @map("code_language")
+
+  // Katkıcının kendi yazdığı demo markup'ı.
+  // Saf CSS ya da DOM'a bağlı JS tek başına ekranda hiçbir şey göstermez; hangi
+  // markup'ın onu görünür kıldığını en iyi kodu yazan bilir. Doluysa canlı
+  // önizleme bunu kullanır ve tahmin yürütmeye gerek kalmaz.
+  demoHtml         String?       @map("demo_html")
   category         String        // frontend, backend, hacking
   difficulty       Difficulty    @default(beginner)
   tags             String[]

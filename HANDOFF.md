@@ -35,6 +35,9 @@ FWT, sahibinin **TOYWES** ekosisteminin ilk projesi.
 - TanStack Query (veri), Zustand (auth state), React Hook Form + Zod (formlar)
 - `react-syntax-highlighter` + projeye özel Prism teması
 - Framer Motion (giriş animasyonları), lucide-react (ikonlar)
+- **Sucrase** — JSX/TS'i tarayıcıda JS'e çevirir (canlı önizleme); dinamik `import()` ile
+  yalnızca React önizlemesi açıldığında indirilir
+- **esbuild** (devDependency) — önizleme iframe'inin React çalışma zamanını paketler
 
 **Backend** (`backend/`, 21 dosya)
 - Node + Express **5** + TypeScript
@@ -84,6 +87,10 @@ Bunlar keyfi değil; değiştirmeden önce gerekçeyi tart.
 
 `backend/prisma/schema.prisma` — 6 model: `User`, `Snippet`, `Comment`,
 `UserInteraction`, `ContributionHistory`, `ShortLink`.
+
+**`Snippet.demoHtml`** (nullable): katkıcının yazdığı demo markup. Saf CSS/JS'i görünür kılan
+iskelet. Sanitize **edilmez ve edilmemeli** — önizleme zaten sandbox'lı iframe'de çalışır ve bu
+alan snippet kodunun kendisiyle aynı güven seviyesindedir. Ana sayfanın DOM'una asla enjekte edilmez.
 
 **Kritik alan — `Snippet.mediaType`** (enum: `video | image | live | none`):
 snippet'in üstünde ne gösterileceğini belirler. Yanında `videoUrl`,
@@ -150,6 +157,19 @@ Tüm planlanan fazlar bitti (`FWT_TECH_STACK_BLUEPRINT.md` referans alındı):
 4. E-posta doğrulama + bildirimler
 5. Ölçekte arama (şu an basit `contains` sorgusu)
 
+**Son teknik güncelleme (2026-08-07):**
+- Çalıştırılamayan frontend snippet'leri (`CodeThumbnail`) kartta artık düz metin yerine
+  satır numaralı Prism syntax highlighting ile gösterilir.
+- **Canlı önizleme iki yönden genişletildi:**
+  1. `Snippet.demoHtml` alanı eklendi — katkıcı yalnızca CSS ya da JS paylaşsa bile önizleme
+     çalışıyor. Yükleme formunda frontend kategorisinde isteğe bağlı alan olarak çıkıyor.
+  2. JSX/TSX artık **derlenip çalıştırılıyor** (Sucrase + kendi paketlediğimiz React runtime).
+     `LANGUAGES` listesine `jsx`/`tsx` eklendi.
+  Güvenlik sandbox'ı değişmedi: `PREVIEW_SANDBOX` hâlâ `allow-same-origin` **vermiyor**.
+  Doğrulandı: TSX sayaç bileşeni sandbox'lı iframe içinde render oluyor ve tıklamayla
+  state güncelleniyor (0 → 2); saf CSS + demo markup canlı görünüyor; demo markup'ı olmayan
+  snippet ne yapılması gerektiğini söyleyen panel gösteriyor.
+
 ---
 
 ## 8. Kod stili
@@ -177,11 +197,22 @@ sayfalar derlendikçe *birer birer* düşüyor. Log: `frontend/.next/dev/logs/ne
 `prisma generate` çalışsa bile çalışan süreç eski istemciyi bellekte tutuyor →
 `Unknown field ... for select statement`. `tsx watch` bunu kurtarmıyor.
 
-**3. Canlı önizleme her kod için mümkün değil.**
-React/TSX derleme gerektirir; iframe'e yapıştırılırsa ham kaynak kod görünür.
-`canRenderLive()` (`lib/preview.ts`) buna karar veriyor. Saf CSS `<style>` içine sarılır.
-Tailwind CDN'i **sadece kod Tailwind sınıfı kullanıyorsa** enjekte edilir
-(400 KB, çevrimdışı çalışmaz, IP sızdırır).
+**3. Canlı önizlemenin üç ayrı yolu var — hangisinin seçildiğini bil.**
+`lib/preview.ts` karar verir:
+- **Doğrudan çalışan kod** (tam HTML belgesi, markup, `<style>`/`<script>` içeren HTML):
+  `canRenderLive()` true → `buildPreviewDocument()` senkron üretir.
+- **Derleme gerektiren kod** (JSX/TSX): `needsCompilation()` true → `lib/reactPreview.ts`
+  Sucrase ile derler, **asenkron**. Derleme üst sayfada yapılır, iframe'e düz JS girer.
+- **Hiçbiri**: `liveBlocker()` nedeni söyler — `needs-demo-html` (katkıcı düzeltebilir)
+  ya da `not-browser-language` (Python/Go/SQL — hiçbir koşulda çalışmaz).
+
+Saf CSS/JS tek başına ekranda hiçbir şey göstermez; `Snippet.demoHtml` alanı katkıcının
+yazdığı iskeleti taşır ve doluysa önizleme çalışır. Tailwind CDN'i **sadece kod Tailwind
+sınıfı kullanıyorsa** enjekte edilir (400 KB, çevrimdışı çalışmaz, IP sızdırır).
+
+**Kartlarda React önizlemesi bilinçli olarak yok.** Bir ızgarada düzinelerce iframe'in her biri
+React çalışma zamanını ayrıştırsaydı zayıf makinelerde liste kilitlenirdi; kartta `CodeThumbnail`,
+detayda canlı çalıştırma var.
 
 **4. Önizleme iframe'inde `allow-same-origin` KULLANMA.**
 `srcDoc` üst sayfayla aynı kaynağı paylaşır; topluluktan gelen snippet kodu
@@ -193,6 +224,20 @@ localStorage'daki JWT'yi okuyabilir. Sabit: `PREVIEW_SANDBOX = 'allow-scripts al
 React Compiler tarafından memoize edilemiyor. Kütüphane kaynaklı, davranışsal etkisi yok.
 
 **7. `npm exec -- <komut> --flag` argümanları geçirmiyor.** Scriptlerde `cd X && npx ...` kullan.
+
+**8. React 19'un UMD build'i yok.** İframe'e doğrudan verilebilecek hazır dosya yayınlanmıyor.
+`frontend/scripts/build-preview-runtime.mjs` esbuild ile kendi paketimizi üretip
+`public/preview/react-runtime.js` olarak koyuyor; `predev`/`prebuild` bunu otomatik çalıştırır.
+Çıktı git'e girmez (`.gitignore`) ve ESLint'ten hariç tutulur — yoksa üretilmiş minified dosya
+700'e yakın sahte uyarı basıyor.
+
+**9. Headless tarayıcı testinde `--virtual-time-budget` yanıltıyor.**
+Sanal zaman CPU işini beklemiyor: React önizlemesi aslında çalışırken ekran görüntüsünde
+sonsuz spinner görünüyordu ve bu **yanlışlıkla ürün hatası sanıldı**. Doğru ölçüm CDP ile
+gerçek zamanlı bekleyip `Page.captureScreenshot` almak. Ayrıca önizleme iframe'i
+`allow-same-origin` almadığı için **ayrı bir süreç hedefi (OOPIF)**: sayfa düzeyinde
+`Input.dispatchMouseEvent` içine ulaşmaz, `Target.attachToTarget` ile çerçevenin kendi
+oturumuna bağlanman gerekir.
 
 ---
 

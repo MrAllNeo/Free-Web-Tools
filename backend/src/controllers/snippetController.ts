@@ -93,6 +93,7 @@ export async function listSnippets(req: Request, res: Response, next: NextFuncti
           // Frontend kartları kodu iframe içinde canlı gösterdiği için
           // liste yanıtı kod içeriğini de taşır.
           codeContent: true,
+          demoHtml: true,
           mediaType: true,
           videoUrl: true,
           videoDurationSeconds: true,
@@ -239,6 +240,7 @@ export async function createSnippet(req: AuthRequest, res: Response, next: NextF
         description: data.description,
         codeContent: data.codeContent,
         codeLanguage: data.codeLanguage,
+        demoHtml: data.demoHtml || null,
         category: data.category,
         difficulty: data.difficulty,
         tags: data.tags,

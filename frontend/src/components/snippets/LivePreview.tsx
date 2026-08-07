@@ -2,20 +2,61 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Maximize2, Minimize2, RefreshCw } from 'lucide-react';
-import { buildPreviewDocument, PREVIEW_SANDBOX } from '@/lib/preview';
+import { buildPreviewDocument, needsCompilation, PREVIEW_SANDBOX } from '@/lib/preview';
+import { buildReactPreviewDocument, previewErrorDocument } from '@/lib/reactPreview';
 
 interface LivePreviewProps {
   code: string;
   title?: string;
   /** Saf CSS'i <style> içine sarmak gibi dile özgü hazırlık için gerekli. */
   language?: string;
+  /** Katkıcının verdiği demo markup — kodu görünür kılan iskelet. */
+  demoHtml?: string;
 }
 
-export function LivePreview({ code, title = 'önizleme', language = 'html' }: LivePreviewProps) {
+export function LivePreview({
+  code,
+  title = 'önizleme',
+  language = 'html',
+  demoHtml,
+}: LivePreviewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // JSX/TS derleme gerektirir ve derleyici dinamik olarak indirilir; bu yüzden
+  // React yolu asenkron. Doğrudan çalışan kod ise render sırasında hazırlanır.
+  const mustCompile = needsCompilation(code, language);
+  const [compiled, setCompiled] = useState<{ source: string; doc: string } | null>(null);
+
+  useEffect(() => {
+    if (!mustCompile) return;
+
+    let cancelled = false;
+    buildReactPreviewDocument(code, demoHtml)
+      .then((doc) => {
+        if (!cancelled) setCompiled({ source: code, doc });
+      })
+      .catch((error: unknown) => {
+        // Beklenmedik bir hata yakalanmazsa srcDoc sonsuza kadar null kalır ve
+        // kullanıcı dönen bir spinner görür. Sebebini göstermek her zaman daha iyi.
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : String(error);
+        setCompiled({
+          source: code,
+          doc: previewErrorDocument(`Önizleme hazırlanamadı:\n\n${message}`),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mustCompile, code, demoHtml]);
+
+  const srcDoc = mustCompile
+    ? // Kod değiştiyse eski derlemeyi gösterme; yenisi gelene kadar bekle.
+      (compiled?.source === code ? compiled.doc : null)
+    : buildPreviewDocument(code, language, demoHtml);
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -74,19 +115,21 @@ export function LivePreview({ code, title = 'önizleme', language = 'html' }: Li
       </div>
 
       <div className="relative flex-1 bg-white overflow-hidden">
-        {isLoading && (
+        {(isLoading || !srcDoc) && (
           <div className="absolute inset-0 flex items-center justify-center bg-inset z-10">
             <Loader2 className="w-5 h-5 text-amber animate-spin" />
           </div>
         )}
-        <iframe
-          key={reloadKey}
-          srcDoc={buildPreviewDocument(code, language)}
-          title="Canlı önizleme"
-          className="w-full h-full border-none"
-          sandbox={PREVIEW_SANDBOX}
-          onLoad={() => setIsLoading(false)}
-        />
+        {srcDoc && (
+          <iframe
+            key={reloadKey}
+            srcDoc={srcDoc}
+            title="Canlı önizleme"
+            className="w-full h-full border-none"
+            sandbox={PREVIEW_SANDBOX}
+            onLoad={() => setIsLoading(false)}
+          />
+        )}
       </div>
     </div>
   );

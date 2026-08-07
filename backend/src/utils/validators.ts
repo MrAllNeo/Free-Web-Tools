@@ -52,6 +52,10 @@ export const createSnippetSchema = z.object({
   description: z.string().optional(),
   codeContent: z.string().min(1, 'Code content is required'),
   codeLanguage: z.string().min(1, 'Code language is required'),
+  // Canlı önizlemede kodu saran demo markup. Sanitize edilmez ve edilmemeli:
+  // önizleme zaten sandbox'lı bir iframe'de çalışır, snippet kodunun kendisiyle
+  // aynı güven seviyesindedir. Ana sayfanın DOM'una asla enjekte edilmez.
+  demoHtml: z.string().max(20000).optional(),
   category: z.enum(['frontend', 'backend', 'hacking']),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']).default('beginner'),
   tags: z.array(z.string()).default([]),

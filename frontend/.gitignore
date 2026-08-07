@@ -20,6 +20,9 @@
 # production
 /build
 
+# önizleme iframe'inin React runtime'ı — `npm run dev`/`build` öncesi üretilir
+/public/preview/
+
 # misc
 .DS_Store
 *.pem

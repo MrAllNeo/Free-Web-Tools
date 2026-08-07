@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // esbuild'in ürettiği React önizleme paketi — bizim yazdığımız kod değil.
+    "public/preview/**",
   ]),
 ]);
 

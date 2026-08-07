@@ -21,7 +21,7 @@ Most code-sharing sites give you a wall of text with no context, or a video with
 ## Why FWT?
 
 - **📹 Every snippet has a video** — contributors record a walkthrough (YouTube embed or direct upload) alongside the code they publish.
-- **🧪 Frontend code is testable** — not a read-only gist. Snippets render live in a sandboxed iframe you can reload and open fullscreen.
+- **🧪 Frontend code actually runs** — not a read-only gist. Snippets render live in a sandboxed iframe you can reload and open fullscreen. React and TSX are compiled in the browser, so components are interactive, not screenshots. Sharing only a CSS class or a script? Add a few lines of demo markup and the preview works anyway.
 - **🛡️ Hacking content is educational-only** — locked from execution, reviewed before publishing, with automated flagging for anything resembling malware or exploits.
 - **🧰 Instant utilities, zero friction** — thirteen tools that need no account and, for twelve of them, never send your data to a server.
 - **🌍 Built by and for the community** — contributors earn reputation for sharing quality content.
@@ -30,7 +30,7 @@ Most code-sharing sites give you a wall of text with no context, or a video with
 
 | # | Section | What lives here | Code execution |
 |---|---------|-----------------|----------------|
-| 01 | **Frontend** | UI components, CSS effects, animations | Live preview in browser |
+| 01 | **Frontend** | UI components, CSS effects, animations | Live preview in browser (JSX/TSX compiled on the fly) |
 | 02 | **Backend** | Auth systems, API patterns, DB schemas | Runnable / testable |
 | 03 | **Hacking** | Pentest techniques, vulnerability analysis | **View-only**, never executed |
 | 04 | **Tools** | Standalone developer utilities | Runs instantly, no account |
@@ -73,6 +73,7 @@ Snippet cards and code panels are styled like terminal windows, right down to th
 - TanStack Query (data fetching), Zustand (auth state), React Hook Form + Zod (forms)
 - `react-syntax-highlighter` with a custom Prism theme matching the palette
 - Framer Motion for entrance transitions
+- Sucrase to compile JSX/TypeScript snippets in the browser, with a self-hosted React runtime bundled by esbuild — no CDN, so previews work offline and leak no visitor IPs
 
 **Backend**
 - Node.js + Express 5 + TypeScript

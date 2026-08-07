@@ -27,6 +27,11 @@ export interface Snippet {
   description?: string;
   codeContent: string;
   codeLanguage: string;
+  /**
+   * Katkıcının yazdığı demo markup. Saf CSS ya da DOM'a bağlı JS'i görünür kılan
+   * iskelet — doluysa canlı önizleme kodu bunun içine yerleştirir.
+   */
+  demoHtml?: string;
   category: 'frontend' | 'backend' | 'hacking';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[];

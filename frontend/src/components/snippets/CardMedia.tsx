@@ -17,9 +17,13 @@ export function CardMedia({ snippet }: { snippet: Snippet }) {
     (snippet.category === 'frontend' ? 'live' : snippet.videoUrl ? 'video' : 'none');
 
   if (mediaType === 'live' && snippet.codeContent) {
-    // Derleme gerektiren kod (React/TSX) iframe'de ham metin olarak görünürdü;
-    // onun yerine kod önizlemesi gösteriyoruz.
-    if (!canRenderLive(snippet.codeContent, snippet.codeLanguage)) {
+    // Kartlarda yalnızca doğrudan çalışan kod canlı gösterilir.
+    //
+    // React snippet'leri detay sayfasında derlenip çalışıyor, ama bir ızgarada
+    // düzinelerce kart var: her biri React çalışma zamanını ayrıştırıp kendi
+    // kökünü kurmak zorunda kalırdı. Zayıf makinelerde bu listeyi kilitler.
+    // Kartta kod önizlemesi göstermek, detayda canlı çalıştırmak makul takas.
+    if (!canRenderLive(snippet.codeContent, snippet.codeLanguage, snippet.demoHtml)) {
       return <CodeThumbnail code={snippet.codeContent} language={snippet.codeLanguage} />;
     }
 
@@ -34,7 +38,7 @@ export function CardMedia({ snippet }: { snippet: Snippet }) {
           Kart bir bağlantı olduğundan iframe tıklamaları yutmamalı.
         */}
         <iframe
-          srcDoc={buildPreviewDocument(snippet.codeContent, snippet.codeLanguage)}
+          srcDoc={buildPreviewDocument(snippet.codeContent, snippet.codeLanguage, snippet.demoHtml)}
           title=""
           aria-hidden="true"
           tabIndex={-1}
