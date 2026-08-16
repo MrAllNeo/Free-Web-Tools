@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Loader2, MessageSquare, Star, Trash2 } from 'lucide-react';
+import { Loader2, MessageSquare, Pencil, Star, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
@@ -30,16 +30,35 @@ function Stars({ value }: { value: number }) {
 function CommentItem({
   comment,
   onDelete,
+  onEdit,
   canDelete,
+  canEdit,
   isDeleting,
   nested = false,
 }: {
   comment: Comment;
   onDelete: (id: string) => void;
+  onEdit: (id: string, content: string) => Promise<void>;
   canDelete: (comment: Comment) => boolean;
+  canEdit: (comment: Comment) => boolean;
   isDeleting: boolean;
   nested?: boolean;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(comment.content);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const save = async () => {
+    if (draft.trim() === '') return;
+    setIsSaving(true);
+    try {
+      await onEdit(comment.id, draft.trim());
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Card className={`p-5 ${nested ? 'ml-6 border-l-2 border-l-line' : ''}`}>
       <div className="flex items-start justify-between gap-4 mb-3">
@@ -57,6 +76,19 @@ function CommentItem({
 
         <div className="flex items-center gap-3 shrink-0">
           {comment.rating != null && <Stars value={comment.rating} />}
+          {canEdit(comment) && !isEditing && (
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(comment.content);
+                setIsEditing(true);
+              }}
+              aria-label="Yorumu düzenle"
+              className="p-1 text-dim hover:text-amber transition-colors cursor-pointer"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
           {canDelete(comment) && (
             <button
               type="button"
@@ -71,9 +103,35 @@ function CommentItem({
         </div>
       </div>
 
-      <p className="text-[13.5px] text-muted leading-relaxed whitespace-pre-wrap">
-        {comment.content}
-      </p>
+      {isEditing ? (
+        <div className="space-y-2">
+          <Textarea
+            rows={3}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            aria-label="Yorum metni"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsEditing(false)} disabled={isSaving}>
+              Vazgeç
+            </Button>
+            <Button variant="solid" onClick={save} disabled={isSaving || draft.trim() === ''}>
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Kaydet
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="text-[13.5px] text-muted leading-relaxed whitespace-pre-wrap">
+            {comment.content}
+          </p>
+          {/* Düzenlenmiş yorumu okuyucunun ayırt edebilmesi gerekir. */}
+          {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
+            <span className="mt-1 block font-mono text-[10.5px] text-dim">düzenlendi</span>
+          )}
+        </>
+      )}
 
       {comment.replies && comment.replies.length > 0 && (
         <div className="mt-4 space-y-3">
@@ -82,7 +140,9 @@ function CommentItem({
               key={reply.id}
               comment={reply}
               onDelete={onDelete}
+              onEdit={onEdit}
               canDelete={canDelete}
+              canEdit={canEdit}
               isDeleting={isDeleting}
               nested
             />
@@ -145,6 +205,20 @@ export function CommentSection({
 
   const canDelete = (comment: Comment) =>
     isAuthenticated && (user?.id === comment.user.id || user?.role === 'admin');
+
+  // Yönetici başkasının yorumunu silebilir ama DÜZENLEYEMEZ: birinin ağzından
+  // söz değiştirmek moderasyon değil, tahrifat olurdu. Sunucu da böyle davranıyor.
+  const canEdit = (comment: Comment) => isAuthenticated && user?.id === comment.user.id;
+
+  const editComment = async (id: string, newContent: string) => {
+    try {
+      await api.put(`/users/comments/${id}`, { content: newContent });
+      toast.success('Yorum güncellendi');
+      invalidate();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Yorum güncellenemedi'));
+    }
+  };
 
   return (
     <div>
@@ -234,7 +308,9 @@ export function CommentSection({
               key={comment.id}
               comment={comment}
               onDelete={(id) => remove.mutate(id)}
+              onEdit={editComment}
               canDelete={canDelete}
+              canEdit={canEdit}
               isDeleting={remove.isPending}
             />
           ))}

@@ -254,6 +254,84 @@ function autoApproves(role: string, category: string): boolean {
   return role === 'contributor';
 }
 
+const CARD_FIELDS = {
+  id: true,
+  title: true,
+  slug: true,
+  description: true,
+  codeLanguage: true,
+  category: true,
+  difficulty: true,
+  tags: true,
+  codeContent: true,
+  demoHtml: true,
+  mediaType: true,
+  videoUrl: true,
+  videoDurationSeconds: true,
+  imageUrl: true,
+  viewsCount: true,
+  likesCount: true,
+  commentsCount: true,
+  averageRating: true,
+  createdAt: true,
+  author: { select: { id: true, username: true, avatarUrl: true } },
+} as const;
+
+/**
+ * Detay sayfasının çıkmaz sokak olmaması için: aynı yazarın diğer snippet'leri
+ * ve etiket/kategori olarak benzer olanlar.
+ *
+ * Benzerlik basit tutuldu — önce ortak etiket, yoksa aynı kategori. Bu ölçekte
+ * bir öneri motoruna gerek yok; amaç okuyucuya gidecek bir yer göstermek.
+ */
+export async function getRelatedSnippets(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const id = req.params.id as string;
+
+    const current = await prisma.snippet.findFirst({
+      where: { OR: [{ id }, { slug: id }], status: 'approved' },
+      select: { id: true, createdBy: true, category: true, tags: true },
+    });
+
+    if (!current) {
+      res.status(404).json({ error: 'Snippet not found' });
+      return;
+    }
+
+    const exclude = { id: { not: current.id }, status: 'approved' as const };
+
+    const [byAuthor, similar] = await Promise.all([
+      prisma.snippet.findMany({
+        where: { ...exclude, createdBy: current.createdBy },
+        orderBy: { publishedAt: 'desc' },
+        take: 3,
+        select: CARD_FIELDS,
+      }),
+      prisma.snippet.findMany({
+        where: {
+          ...exclude,
+          createdBy: { not: current.createdBy },
+          OR: [
+            ...(current.tags.length > 0 ? [{ tags: { hasSome: current.tags } }] : []),
+            { category: current.category },
+          ],
+        },
+        orderBy: { likesCount: 'desc' },
+        take: 3,
+        select: CARD_FIELDS,
+      }),
+    ]);
+
+    res.json({ byAuthor, similar });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createSnippet(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.user) {

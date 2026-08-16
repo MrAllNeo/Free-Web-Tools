@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Panel';
 import type { Snippet } from '@/lib/types';
+import { ReportQueue } from '@/components/admin/ReportQueue';
 
 interface Analytics {
   users: number;
@@ -101,6 +102,8 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         )}
+
+        <ReportQueue />
 
         <div className="bg-raised border border-line rounded-md overflow-hidden">
           <div className="px-5 py-4 border-b border-line-soft bg-inset flex items-center gap-2">

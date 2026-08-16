@@ -25,6 +25,9 @@ import { CodeViewer } from '@/components/snippets/CodeViewer';
 import { SnippetMedia, mediaHeading } from '@/components/snippets/SnippetMedia';
 import { CommentSection } from '@/components/snippets/CommentSection';
 import { InteractionButtons } from '@/components/snippets/InteractionButtons';
+import { RelatedSnippets } from '@/components/snippets/RelatedSnippets';
+import { ReportButton } from '@/components/snippets/ReportButton';
+import { ShareButton } from '@/components/snippets/ShareButton';
 import { DIFFICULTIES } from '@/lib/constants';
 import { Container } from '@/components/ui/Container';
 import { ButtonLink } from '@/components/ui/Button';
@@ -119,7 +122,8 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <ShareButton title={snippet.title} />
               {canEdit && (
                 <Link
                   href={`/snippets/${snippet.slug}/edit`}
@@ -255,6 +259,13 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
             )}
 
             <CommentSection snippetId={snippet.id} snippetSlug={snippet.slug} />
+
+            {/* Kendi içeriğini bildirmek anlamsız; kendi snippet'inde gizli. */}
+            {!canEdit && (
+              <div className="pt-2">
+                <ReportButton snippetId={snippet.id} label="bu snippet'i bildir" />
+              </div>
+            )}
           </div>
 
           {/* Kenar çubuğu */}
@@ -321,6 +332,10 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
               </Card>
             )}
           </aside>
+        </div>
+
+        <div className="mt-14 pt-10 border-t border-line-soft">
+          <RelatedSnippets slug={snippet.slug} authorUsername={snippet.author.username} />
         </div>
       </div>
     </Container>

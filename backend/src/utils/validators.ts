@@ -36,6 +36,21 @@ export const moderateSnippetSchema = z.object({
   rejectionReason: z.string().max(500).optional(),
 });
 
+export const createReportSchema = z.object({
+  snippetId: z.string().uuid().optional(),
+  commentId: z.string().uuid().optional(),
+  reason: z.enum(['spam', 'malicious', 'offensive', 'copyright', 'other']),
+  details: z.string().max(1000).optional(),
+});
+
+export const resolveReportSchema = z.object({
+  status: z.enum(['resolved', 'dismissed']),
+});
+
+export const updateCommentSchema = z.object({
+  content: z.string().min(1, 'Comment cannot be empty').max(5000),
+});
+
 export const shortenUrlSchema = z.object({
   url: z.string().min(1, 'URL is required'),
   // Süresiz linkler kalıcı olarak veritabanında birikir; 1-365 gün arası sınır konulabilir.

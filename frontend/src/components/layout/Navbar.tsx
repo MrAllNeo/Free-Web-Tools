@@ -9,6 +9,7 @@ import { useAuthStore } from '@/lib/store';
 import { NAV_SECTIONS } from '@/lib/constants';
 import { Container } from '@/components/ui/Container';
 import { ButtonLink } from '@/components/ui/Button';
+import { NotificationBell } from './NotificationBell';
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -67,6 +68,7 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
               <div className="hidden sm:flex items-center gap-3">
+                <NotificationBell />
                 <Link
                   href="/profile"
                   className="flex items-center gap-2 font-mono text-[13px] text-muted hover:text-fg transition-colors"

@@ -7,6 +7,8 @@ import { snippetRouter } from './routes/snippets';
 import { userRouter } from './routes/users';
 import { linkRouter } from './routes/links';
 import { adminRouter } from './routes/admin';
+import { notificationRouter } from './routes/notifications';
+import { reportRouter } from './routes/reports';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimit';
 import { logger } from './utils/logger';
@@ -61,6 +63,8 @@ app.use('/api/snippets', snippetRouter);
 app.use('/api/users', userRouter);
 app.use('/api/links', linkRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/notifications', notificationRouter);
+app.use('/api/reports', reportRouter);
 
 // 404 handler
 app.use((_req, res) => {

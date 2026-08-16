@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
-import { createCommentSchema } from '../utils/validators';
+import { createCommentSchema, updateCommentSchema } from '../utils/validators';
 import { AuthRequest } from '../middleware/auth';
+import { notifyCommentOnSnippet, notifyReplyToComment } from '../services/notifications';
 
 const COMMENT_AUTHOR = { id: true, username: true, avatarUrl: true } as const;
 
@@ -71,7 +72,7 @@ export async function createComment(
 
     const snippet = await prisma.snippet.findFirst({
       where: { id: snippetId, status: 'approved' },
-      select: { id: true },
+      select: { id: true, createdBy: true },
     });
 
     if (!snippet) {
@@ -81,16 +82,18 @@ export async function createComment(
 
     // Yanıt veriliyorsa üst yorumun aynı snippet'e ait olduğunu doğrula —
     // aksi hâlde başka bir snippet'in yorumuna iliştirilebilir.
+    let parentAuthorId: string | null = null;
     if (data.parentCommentId) {
       const parent = await prisma.comment.findFirst({
         where: { id: data.parentCommentId, snippetId },
-        select: { id: true },
+        select: { id: true, userId: true },
       });
 
       if (!parent) {
         res.status(400).json({ error: 'Parent comment does not belong to this snippet' });
         return;
       }
+      parentAuthorId = parent.userId;
     }
 
     const comment = await prisma.comment.create({
@@ -106,7 +109,77 @@ export async function createComment(
 
     await recalculateRating(snippetId);
 
+    // Bildirimler yorumun kaydedilmesinden sonra; hata verseler bile yorum durur.
+    // Yanıt veriliyorsa üst yorumun sahibine, değilse snippet sahibine gider —
+    // ikisi de aynı kişiyse tek bildirim yeter.
+    if (parentAuthorId) {
+      await notifyReplyToComment({
+        parentAuthorId,
+        actorId: req.user.id,
+        snippetId,
+        commentId: comment.id,
+      });
+    }
+    if (snippet.createdBy !== parentAuthorId) {
+      await notifyCommentOnSnippet({
+        snippetOwnerId: snippet.createdBy,
+        actorId: req.user.id,
+        snippetId,
+        commentId: comment.id,
+      });
+    }
+
     res.status(201).json({ comment });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Yorum metnini düzenler.
+ *
+ * Puan bilinçli olarak değiştirilemez: puan snippet'in ortalamasını besliyor ve
+ * yorum üzerinden sessizce oynanabilmesi ortalamayı manipüle etmenin kolay yolu
+ * olurdu. Puanını değiştirmek isteyen yorumu silip yeniden yazar.
+ */
+export async function updateComment(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const id = req.params.id as string;
+    const data = updateCommentSchema.parse(req.body);
+
+    const existing = await prisma.comment.findUnique({
+      where: { id },
+      select: { id: true, userId: true },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Comment not found' });
+      return;
+    }
+
+    // Yönetici başkasının yorumunu silebilir ama yazamaz: birinin ağzından
+    // söz değiştirmek moderasyon değil, tahrifat olurdu.
+    if (existing.userId !== req.user.id) {
+      res.status(403).json({ error: 'You can only edit your own comments' });
+      return;
+    }
+
+    const comment = await prisma.comment.update({
+      where: { id },
+      data: { content: data.content },
+      include: { user: { select: COMMENT_AUTHOR } },
+    });
+
+    res.json({ comment });
   } catch (error) {
     next(error);
   }

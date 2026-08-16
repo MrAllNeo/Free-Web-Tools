@@ -89,8 +89,8 @@ Bunlar keyfi değil; değiştirmeden önce gerekçeyi tart.
 
 ## 5. Veri modeli
 
-`backend/prisma/schema.prisma` — 6 model: `User`, `Snippet`, `Comment`,
-`UserInteraction`, `ContributionHistory`, `ShortLink`.
+`backend/prisma/schema.prisma` — 8 model: `User`, `Snippet`, `Comment`,
+`UserInteraction`, `ContributionHistory`, `ShortLink`, `Notification`, `Report`.
 
 **`Snippet.demoHtml`** (nullable): katkıcının yazdığı demo markup. Saf CSS/JS'i görünür kılan
 iskelet. Sanitize **edilmez ve edilmemeli** — önizleme zaten sandbox'lı iframe'de çalışır ve bu
@@ -137,8 +137,17 @@ POST   /api/links/shorten                  misafir de kullanabilir
 GET    /api/links/:slug                    çöz + tıklanma say
 GET    /api/links/stats/:slug              istatistik
 
+GET    /api/snippets/:id/related           aynı yazardan + benzer snippet'ler
+PUT    /api/users/comments/:id             yorum düzenle (YALNIZCA sahibi, yönetici bile değil)
+
+GET    /api/notifications                  bildirimler + okunmamış sayısı
+PUT    /api/notifications/read             tümünü okundu işaretle
+POST   /api/reports                        içerik bildir (giriş şart)
+
 GET    /api/admin/snippets/pending         moderasyon kuyruğu
 PUT    /api/admin/snippets/:id/status      onayla/reddet (+gerekçe)
+GET    /api/admin/reports                  açık şikayetler
+PUT    /api/admin/reports/:id              şikayeti kapat
 GET    /api/admin/analytics                platform özeti
 ```
 
@@ -168,7 +177,7 @@ Saf kod — dış servis gerektirmez:
 | **B · Test altyapısı** | Vitest + 130 test: araçların saf mantığı, önizleme kuralları, `urlSafety`, doğrulayıcılar | ✅ **bitti** |
 | **C · Profil** | `/profile/[username]`, yazar adlarının link olması, kullanıcının snippet'leri | ✅ **bitti** |
 | **İ · Sahiplik** | Snippet düzenleme/silme, "snippet'lerim" (bekleyen+reddedilen), kaydedilenler | ✅ **bitti** |
-| **J · Topluluk** | İçerik bildirme, yorum bildirimi, bu yazardan diğerleri, paylaş düğmesi, yorum düzenleme | bekliyor |
+| **J · Topluluk** | İçerik bildirme, yorum bildirimi, bu yazardan diğerleri, paylaş düğmesi, yorum düzenleme | ✅ **bitti** |
 | **E · Moderasyon** | Hacking kategorisi için otomatik anahtar kelime filtresi | bekliyor |
 | **G · Arama** | Postgres tam metin arama, indeksler, yorumlarda sayfalama | bekliyor |
 
@@ -190,6 +199,25 @@ Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
 | `2b9ff89` | **Grup C** — herkese açık profil sayfaları |
 
 Commit mesajları uzun ve gerekçeli yazıldı; bir kararın nedenini merak edersen önce oraya bak.
+
+**Grup J'de yapılanlar:** İki yeni model — `Notification` ve `Report`.
+
+- **Bildirimler** (`services/notifications.ts`): snippet'ine yorum gelince, yorumuna yanıt
+  gelince, moderasyon karar verince. E-posta yok, site içinde duruyor. Zil `Navbar`da,
+  liste `/my/notifications`. Bildirim üretimi tetikleyen işlemi **etkilemez** — hata yutulup
+  loglanıyor; yorum kaydedildiyse kaydedilmiştir.
+- **Şikayet**: `/api/reports` (giriş şart — anonim bildirim kuyruğu doldurmanın bedava yolu
+  olurdu). Aynı kişi aynı içeriği tekrar bildirirse yeni kayıt açılmıyor. Yönetici kuyruğu
+  `/admin` içinde `ReportQueue` bileşeninde. **Moderasyon önceden yalnızca yayın öncesini
+  kapsıyordu**; bu, yayımlandıktan sonrasını kapatıyor.
+- **Benzer snippet'ler**: `GET /api/snippets/:id/related` → aynı yazardan 3 + benzer 3
+  (önce ortak etiket, yoksa aynı kategori). Öneri motoru değil, amaç detay sayfasının
+  çıkmaz sokak olmaması.
+- **Paylaş düğmesi**: `navigator.share`, yoksa panoya kopyalama.
+- **Yorum düzenleme**: yalnızca **sahibi**. Yönetici başkasının yorumunu silebilir ama
+  **düzenleyemez** — birinin ağzından söz değiştirmek moderasyon değil tahrifat olurdu.
+  Puan düzenlenemiyor: puan snippet ortalamasını besliyor, sessizce değiştirilebilmesi
+  ortalamayı manipüle etmenin kolay yolu olurdu.
 
 **Grup İ'de yapılanlar:** Katkıcı artık kendi içeriğinin sahibi:
 - `/snippets/[slug]/edit` — düzenleme + silme. Form `components/snippets/SnippetForm.tsx`e
@@ -335,6 +363,11 @@ detayda canlı çalıştırma var.
 localStorage'daki JWT'yi okuyabilir. Sabit: `PREVIEW_SANDBOX = 'allow-scripts allow-modals'`.
 
 **5. Zod sürümleri tutarsız** — backend v4, frontend v3.25. Paylaşılan şema yazacaksan dikkat.
+Bu bir hataya yol açtı: Zod v4 `error.errors` alanını **`error.issues`** yaptı, `errorHandler`
+eskisini okumaya devam etti ve `as any` cast'i tip hatasını gizledi. Sonuç, API'deki **her**
+doğrulama hatasının 400 yerine 500 dönmesiydi — kullanıcı "parolan çok kısa" yerine
+"Internal server error" görüyordu. `errorHandler.test.ts` artık bunu koruyor.
+**`as any` yazmak zorunda kaldığın yer, tam da hatanın saklandığı yerdir.**
 
 **6. Kalıcı lint uyarısı** — `snippets/new/page.tsx` içinde react-hook-form `watch()`
 React Compiler tarafından memoize edilemiyor. Kütüphane kaynaklı, davranışsal etkisi yok.

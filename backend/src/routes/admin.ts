@@ -4,6 +4,7 @@ import {
   listPendingSnippets,
   moderateSnippet,
 } from '../controllers/adminController';
+import { listReports, resolveReport } from '../controllers/reportController';
 import { requireAuth, requireRole } from '../middleware/auth';
 
 export const adminRouter = Router();
@@ -14,3 +15,6 @@ adminRouter.use(requireAuth, requireRole('admin'));
 adminRouter.get('/snippets/pending', listPendingSnippets);
 adminRouter.put('/snippets/:id/status', moderateSnippet);
 adminRouter.get('/analytics', getAnalytics);
+
+adminRouter.get('/reports', listReports);
+adminRouter.put('/reports/:id', resolveReport);

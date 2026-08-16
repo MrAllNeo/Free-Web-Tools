@@ -6,6 +6,7 @@ import {
   createSnippet,
   updateSnippet,
   deleteSnippet,
+  getRelatedSnippets,
 } from '../controllers/snippetController';
 import { createComment, listComments } from '../controllers/commentController';
 import {
@@ -25,6 +26,7 @@ snippetRouter.get('/stats', getSnippetStats);
 // optionalAuth: giriş yapmış kullanıcı kendi yayınlanmamış snippet'ini görebilsin.
 snippetRouter.get('/:id', optionalAuth, getSnippet);
 snippetRouter.get('/:id/comments', listComments);
+snippetRouter.get('/:id/related', getRelatedSnippets);
 
 // Authenticated routes
 // Yazma uçlarında ayrıca içerik üretim sınırı var; beğeni/kaydetme gibi geri

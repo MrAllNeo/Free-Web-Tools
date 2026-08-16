@@ -1,3 +1,26 @@
+export type NotificationType =
+  | 'comment_on_snippet'
+  | 'reply_to_comment'
+  | 'snippet_approved'
+  | 'snippet_rejected';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  readAt?: string | null;
+  createdAt: string;
+  /** Onay/red gibi sistem bildirimlerinde yoktur. */
+  actor?: { username: string; avatarUrl?: string } | null;
+  snippet?: { title: string; slug: string } | null;
+}
+
+export interface NotificationList {
+  notifications: AppNotification[];
+  unreadCount: number;
+}
+
+export type ReportReason = 'spam' | 'malicious' | 'offensive' | 'copyright' | 'other';
+
 /**
  * Herkese açık profil yanıtı.
  *
@@ -101,6 +124,8 @@ export interface Comment {
   helpfulCount: number;
   unhelpfulCount: number;
   createdAt: string;
+  /** `createdAt`ten farklıysa yorum düzenlenmiş demektir. */
+  updatedAt?: string;
   user: {
     id: string;
     username: string;

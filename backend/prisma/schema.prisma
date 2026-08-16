@@ -83,6 +83,10 @@ model User {
   contributions ContributionHistory[]
   shortLinks    ShortLink[]
 
+  notifications     Notification[] @relation("NotificationRecipient")
+  notificationsSent Notification[] @relation("NotificationActor")
+  reports           Report[]
+
   @@map("users")
 }
 
@@ -160,6 +164,8 @@ model Snippet {
   comments     Comment[]
   interactions UserInteraction[]
   contributions ContributionHistory[]
+  notifications Notification[]
+  reports       Report[]
 
   @@index([category])
   @@index([codeLanguage])
@@ -186,6 +192,7 @@ model Comment {
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   parentComment Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
   replies       Comment[] @relation("CommentReplies")
+  reports       Report[]
 
   @@index([snippetId])
   @@index([userId])
@@ -228,4 +235,70 @@ model ContributionHistory {
   snippet Snippet @relation(fields: [snippetId], references: [id], onDelete: Cascade)
 
   @@map("contribution_history")
+}
+
+/// Kullanıcının kendi içeriğinde olan biteni görmesi için.
+/// E-posta göndermiyoruz; bildirim yalnızca site içinde durur.
+enum NotificationType {
+  comment_on_snippet
+  reply_to_comment
+  snippet_approved
+  snippet_rejected
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  /// Bildirimi alan kişi.
+  userId    String           @map("user_id")
+  type      NotificationType
+  /// Eylemi yapan kişi. Sistem kaynaklı bildirimlerde (onay/red) boş kalır.
+  actorId   String?          @map("actor_id")
+  snippetId String?          @map("snippet_id")
+  commentId String?          @map("comment_id")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user    User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor   User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  snippet Snippet? @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+
+  /// Okunmamışları listelemek en sık yapılan sorgu.
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+enum ReportReason {
+  spam
+  malicious
+  offensive
+  copyright
+  other
+}
+
+enum ReportStatus {
+  open
+  resolved
+  dismissed
+}
+
+/// Yayımlandıktan sonra kötüye kullanımı yakalamanın tek yolu.
+/// Moderasyon yalnızca yayın öncesi çalışıyordu.
+model Report {
+  id         String       @id @default(uuid())
+  /// Şikayet eden. Hesap silinse de şikayet moderasyon için durmalı.
+  reporterId String?      @map("reporter_id")
+  snippetId  String?      @map("snippet_id")
+  commentId  String?      @map("comment_id")
+  reason     ReportReason
+  details    String?
+  status     ReportStatus @default(open)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  resolvedAt DateTime?    @map("resolved_at")
+
+  reporter User?    @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  snippet  Snippet? @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  comment  Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("reports")
 }
