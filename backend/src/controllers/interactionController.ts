@@ -136,6 +136,12 @@ export async function listSaved(
             category: true,
             difficulty: true,
             tags: true,
+            // Kart kapağı frontend snippet'lerini canlı gösteriyor; bu alanlar
+            // olmadan kaydedilenler listesinde kartlar boş görünürdü.
+            codeContent: true,
+            demoHtml: true,
+            mediaType: true,
+            imageUrl: true,
             videoUrl: true,
             videoDurationSeconds: true,
             viewsCount: true,

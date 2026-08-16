@@ -113,6 +113,60 @@ export async function getPublicProfile(
   }
 }
 
+/**
+ * Kullanıcının kendi snippet'leri — **her statüde**.
+ *
+ * Liste ve profil yalnızca `approved` gösterdiği için katkıcı gönderdiği snippet'i
+ * hiçbir yerde göremiyordu: gönder, "onay bekleniyor" yazısını gör, sonra kaybolsun.
+ * Burada onay bekleyenler ve reddedilenler gerekçesiyle birlikte dönüyor.
+ */
+export async function listMySnippets(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const snippets = await prisma.snippet.findMany({
+      where: { createdBy: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        codeLanguage: true,
+        category: true,
+        difficulty: true,
+        tags: true,
+        codeContent: true,
+        demoHtml: true,
+        mediaType: true,
+        videoUrl: true,
+        videoDurationSeconds: true,
+        imageUrl: true,
+        viewsCount: true,
+        likesCount: true,
+        commentsCount: true,
+        averageRating: true,
+        createdAt: true,
+        // Sahibine özel: kendi içeriğinin nerede takıldığını görmeli.
+        status: true,
+        rejectionReason: true,
+        author: { select: { id: true, username: true, avatarUrl: true } },
+      },
+    });
+
+    res.json({ snippets });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateMe(
   req: AuthRequest,
   res: Response,

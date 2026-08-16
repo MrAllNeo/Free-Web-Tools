@@ -79,6 +79,8 @@ export interface Snippet {
   commentsCount: number;
   averageRating: number;
   status: 'draft' | 'pending' | 'approved' | 'rejected';
+  /** Yalnızca sahibine ve yöneticiye döner (`/users/me/snippets`, moderasyon kuyruğu). */
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
