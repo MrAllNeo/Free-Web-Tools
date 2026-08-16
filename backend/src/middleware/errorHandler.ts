@@ -16,12 +16,18 @@ export function errorHandler(
   logger.error(`Error: ${err.message}`, err.stack);
 
   // Zod validation errors
+  //
+  // Zod v4 `error.errors` alanını `error.issues` olarak yeniden adlandırdı. Burada
+  // hâlâ `.errors` okunuyordu ve `as any` cast'i tip hatasını gizlediği için sorun
+  // sessizce sürdü: dizi `undefined` gelince `.map` patlıyor, hata yöneticisinin
+  // kendisi hata veriyor ve istemciye 400 yerine 500 dönüyordu. Yani API'deki HER
+  // doğrulama hatası "Internal server error" olarak görünüyordu.
   if (err instanceof ZodError) {
-    const errors = (err as any).errors.map((e: any) => ({
-      field: e.path.join('.'),
-      message: e.message,
+    const details = err.issues.map((issue) => ({
+      field: issue.path.join('.'),
+      message: issue.message,
     }));
-    res.status(400).json({ error: 'Validation failed', details: errors });
+    res.status(400).json({ error: 'Validation failed', details });
     return;
   }
 

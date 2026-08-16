@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { moderateSnippetSchema } from '../utils/validators';
 import { AuthRequest } from '../middleware/auth';
+import { notifyModerationResult } from '../services/notifications';
 
 export async function listPendingSnippets(
   _req: Request,
@@ -63,7 +64,9 @@ export async function moderateSnippet(
         publishedAt:
           status === 'approved' ? (existing.publishedAt ?? new Date()) : existing.publishedAt,
       },
-      select: { id: true, slug: true, status: true, publishedAt: true },
+      // rejectionReason da dönüyor: yönetici arayüzü kaydettiği gerekçeyi
+      // yankıda görebilmeli, "kaydedildi mi?" sorusu kalmasın.
+      select: { id: true, slug: true, status: true, publishedAt: true, rejectionReason: true },
     });
 
     // Katkı geçmişi kim neyi ne zaman inceledi sorusunu yanıtlar.
@@ -83,6 +86,13 @@ export async function moderateSnippet(
         data: { reputationScore: { increment: 10 } },
       });
     }
+
+    // Katkıcı kararı öğrenmeli; aksi hâlde kuyruğu elle kontrol etmesi gerekirdi.
+    await notifyModerationResult({
+      snippetOwnerId: existing.createdBy,
+      snippetId: id,
+      approved: status === 'approved',
+    });
 
     res.json({ snippet });
   } catch (error) {
