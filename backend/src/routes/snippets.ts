@@ -14,6 +14,7 @@ import {
   toggleSave,
 } from '../controllers/interactionController';
 import { requireAuth, requireRole } from '../middleware/auth';
+import { writeLimiter } from '../middleware/rateLimit';
 
 export const snippetRouter = Router();
 
@@ -25,11 +26,13 @@ snippetRouter.get('/:id', getSnippet);
 snippetRouter.get('/:id/comments', listComments);
 
 // Authenticated routes
-snippetRouter.post('/', requireAuth, requireRole('contributor', 'admin'), createSnippet);
-snippetRouter.put('/:id', requireAuth, updateSnippet);
+// Yazma uçlarında ayrıca içerik üretim sınırı var; beğeni/kaydetme gibi geri
+// alınabilir ve ucuz işlemler genel tavana bırakıldı.
+snippetRouter.post('/', writeLimiter, requireAuth, requireRole('contributor', 'admin'), createSnippet);
+snippetRouter.put('/:id', writeLimiter, requireAuth, updateSnippet);
 snippetRouter.delete('/:id', requireAuth, deleteSnippet);
 
-snippetRouter.post('/:id/comments', requireAuth, createComment);
+snippetRouter.post('/:id/comments', writeLimiter, requireAuth, createComment);
 snippetRouter.get('/:id/interaction', requireAuth, getMyInteraction);
 snippetRouter.post('/:id/like', requireAuth, toggleLike);
 snippetRouter.post('/:id/save', requireAuth, toggleSave);

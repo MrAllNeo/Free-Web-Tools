@@ -28,13 +28,24 @@ class ApiClient {
       headers,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw data;
+    // Hata yanıtı her zaman JSON olmayabilir: araya giren bir vekil ya da yük
+    // dengeleyici düz metin/HTML dönebilir. json() burada patlarsa gerçek hata
+    // "Sunucuya ulaşılamadı"ya dönüşür ve teşhis imkânsızlaşır.
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      data = { error: response.statusText || 'Sunucu beklenmeyen bir yanıt döndü.' };
     }
 
-    return data;
+    if (!response.ok) {
+      // Durum kodunu da taşıyoruz: bazı hataların (429 gibi) kullanıcıya
+      // gösterilecek metnini sunucunun İngilizce mesajı değil istemci belirliyor.
+      const body = typeof data === 'object' && data !== null ? data : { error: String(data) };
+      throw { ...body, status: response.status };
+    }
+
+    return data as T;
   }
 
   get<T>(endpoint: string): Promise<T> {
@@ -68,7 +79,17 @@ export const api = new ApiClient(API_URL);
  */
 export function getApiErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null) {
-    const body = error as { error?: unknown; details?: Array<{ message?: string }> };
+    const body = error as {
+      error?: unknown;
+      status?: number;
+      details?: Array<{ message?: string }>;
+    };
+
+    // Hız sınırı: sunucunun mesajı İngilizce ve teknik. Arayüz Türkçe olduğu için
+    // kullanıcıya ne olduğunu ve ne yapması gerektiğini burada söylüyoruz.
+    if (body.status === 429) {
+      return 'Çok fazla deneme yaptın. Biraz bekleyip tekrar dene.';
+    }
 
     if (Array.isArray(body.details) && body.details[0]?.message) {
       return String(body.details[0].message);
