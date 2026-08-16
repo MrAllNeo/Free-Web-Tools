@@ -111,6 +111,7 @@ Run these from the repository root — each one delegates to the right workspace
 | `npm run dev` | Both servers with hot reload, logs colour-coded per side |
 | `npm run build` | Compiles the backend to `dist/`, then builds the Next.js app |
 | `npm start` | Runs the production build of both servers |
+| `npm test` | Vitest across frontend and backend (append `:frontend` / `:backend` for one side) |
 | `npm run typecheck` | `tsc --noEmit` across frontend and backend |
 | `npm run lint` | ESLint over the frontend |
 | `npm run db:push` | Sync the Prisma schema to the database |

@@ -111,7 +111,7 @@ export const usesTailwind = (code: string) =>
  * `</script>` dizisi, içine gömüldüğü script bloğunu erkenden kapatır — kod
  * gövdeye taşar ve önizleme bozulur. Etiketi ayırarak bunu engelliyoruz.
  */
-export const escapeForScript = (code: string) => code.replace(/<\/script/gi, '<\\/script');
+export const escapeForScript = (code: string) => code.replace(/<\/(script)/gi, '<\\/$1');
 
 /**
  * Önizleme belgesinin ortak iskeleti. Hem doğrudan çalışan kod hem de derlenmiş

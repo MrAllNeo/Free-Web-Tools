@@ -21,12 +21,32 @@ const BLOCKED_HOSTNAMES = new Set([
 ]);
 
 const BLOCKED_HOSTNAME_PATTERNS = [
+  // IPv4 özel aralıkları
   /^10\./,
   /^192\.168\./,
   /^172\.(1[6-9]|2\d|3[01])\./,
+  // Loopback bloğunun tamamı — 127.0.0.1 dışındaki 127.x adresleri de kendimize işaret eder.
+  /^127\./,
+  // Link-local; bulut metadata uç noktası da bu aralıkta.
+  /^169\.254\./,
   /\.local$/,
   /\.internal$/,
+  // IPv6. Köşeli parantezler normalizeHostname'de soyuluyor.
+  /^::1$/,
+  /^::$/,
+  // IPv4-eşlemeli IPv6 (::ffff:7f00:1 = 127.0.0.1). Meşru kullanımı yok denecek
+  // kadar az, buna karşılık engel atlatmanın kolay yolu.
+  /^::ffff:/,
+  /^fe80:/,
+  /^f[cd][0-9a-f]{2}:/, // benzersiz yerel adresler (fc00::/7)
 ];
+
+/**
+ * `URL.hostname` IPv6 adreslerini köşeli parantezle döndürür ("[::1]"). Parantezler
+ * soyulmazsa liste "::1" içerse bile eşleşme olmaz ve IPv6 loopback engeli atlanır —
+ * bu gerçekten yaşanmış bir açıktı.
+ */
+const normalizeHostname = (hostname: string) => hostname.toLowerCase().replace(/^\[|\]$/g, '');
 
 /** Zincirleme kısaltma (shortener → shortener) kötüye kullanımı gizlemekte kullanılır. */
 const BLOCKED_SHORTENERS = new Set([
@@ -61,7 +81,7 @@ export function checkUrl(input: string, selfHost?: string): UrlCheck {
     return { ok: false, reason: 'Yalnızca http ve https adresleri kısaltılabilir' };
   }
 
-  const hostname = url.hostname.toLowerCase();
+  const hostname = normalizeHostname(url.hostname);
 
   if (BLOCKED_HOSTNAMES.has(hostname) || BLOCKED_HOSTNAME_PATTERNS.some((p) => p.test(hostname))) {
     return { ok: false, reason: 'Yerel ve iç ağ adresleri kısaltılamaz' };

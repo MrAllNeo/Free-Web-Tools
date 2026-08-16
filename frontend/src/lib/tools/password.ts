@@ -34,7 +34,11 @@ export function generatePassword(options: PasswordOptions): string {
   let result = '';
 
   while (result.length < options.length) {
-    const batch = new Uint32Array(options.length - result.length);
+    // crypto.getRandomValues tek çağrıda en fazla 65.536 bayt doldurur; Uint32Array
+    // eleman başına 4 bayt tuttuğu için sınır 16.384 eleman. Aşılırsa QuotaExceededError
+    // fırlar, bu yüzden uzun parolalarda partiler hâlinde ilerliyoruz.
+    const batchSize = Math.min(options.length - result.length, 16384);
+    const batch = new Uint32Array(batchSize);
     crypto.getRandomValues(batch);
     for (const value of batch) {
       if (value >= max) continue;
