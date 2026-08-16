@@ -54,7 +54,7 @@ export function Footer() {
               free/web/tools — kodu gör, videoda izle, aracı kullan
             </p>
             <p className="font-mono text-[12px] text-dim">
-              açık kaynak · {new Date().getFullYear()}
+              TOYWES · {new Date().getFullYear()}
             </p>
           </div>
         </div>

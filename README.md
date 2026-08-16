@@ -224,10 +224,6 @@ Contributions are genuinely welcome — this is a community project.
 
 Adding a tool? Put the pure logic in `frontend/src/lib/tools/`, the widget in `frontend/src/components/tools/`, register it in `frontend/src/lib/constants.ts`, and give it a page under `frontend/src/app/tools/`.
 
-## Open source
-
-FWT is fully open source. Every line of the platform — the design system, the API, the tools, the moderation logic — lives in this repository. Fork it, learn from it, ship your own version of it.
-
 ---
 
 <div align="center">
