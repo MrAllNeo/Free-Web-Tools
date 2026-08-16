@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
-import { createCommentSchema, updateCommentSchema } from '../utils/validators';
+import { commentQuerySchema, createCommentSchema, updateCommentSchema } from '../utils/validators';
 import { AuthRequest } from '../middleware/auth';
 import { notifyCommentOnSnippet, notifyReplyToComment } from '../services/notifications';
 
@@ -35,22 +35,38 @@ export async function listComments(
 ): Promise<void> {
   try {
     const snippetId = req.params.id as string;
+    const { page, limit } = commentQuerySchema.parse(req.query);
 
-    const comments = await prisma.comment.findMany({
-      // Yanıtlar üst yorumun içinde döndüğü için kök seviyeyi filtreliyoruz.
-      where: { snippetId, status: 'approved', parentCommentId: null },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: { select: COMMENT_AUTHOR },
-        replies: {
-          where: { status: 'approved' },
-          orderBy: { createdAt: 'asc' },
-          include: { user: { select: COMMENT_AUTHOR } },
+    // Sayfalama olmadan popüler bir snippet tüm yorumlarını tek yanıtta
+    // döndürüyordu — yanıtlarıyla birlikte, sınırsız.
+    const where = { snippetId, status: 'approved' as const, parentCommentId: null };
+
+    const [comments, total] = await Promise.all([
+      prisma.comment.findMany({
+        // Yanıtlar üst yorumun içinde döndüğü için kök seviyeyi filtreliyoruz.
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          user: { select: COMMENT_AUTHOR },
+          replies: {
+            where: { status: 'approved' },
+            orderBy: { createdAt: 'asc' },
+            // Tek bir yorumun altındaki yanıt zinciri de sınırsız büyüyebilir.
+            take: 10,
+            include: { user: { select: COMMENT_AUTHOR } },
+          },
+          _count: { select: { replies: true } },
         },
-      },
-    });
+      }),
+      prisma.comment.count({ where }),
+    ]);
 
-    res.json({ comments });
+    res.json({
+      comments,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     next(error);
   }

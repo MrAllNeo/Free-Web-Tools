@@ -36,6 +36,11 @@ export const moderateSnippetSchema = z.object({
   rejectionReason: z.string().max(500).optional(),
 });
 
+export const commentQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(50).default(20),
+});
+
 export const createReportSchema = z.object({
   snippetId: z.string().uuid().optional(),
   commentId: z.string().uuid().optional(),

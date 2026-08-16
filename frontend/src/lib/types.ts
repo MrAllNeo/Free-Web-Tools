@@ -132,6 +132,8 @@ export interface Comment {
     avatarUrl?: string;
   };
   replies?: Comment[];
+  /** Yanıtların tamamının sayısı; `replies` en fazla 10 taşır. */
+  _count?: { replies: number };
 }
 
 export interface PaginationInfo {

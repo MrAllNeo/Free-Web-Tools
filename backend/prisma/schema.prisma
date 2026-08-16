@@ -1,9 +1,14 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // Trigram indeksleri için gereken eklenti desteği.
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  // Arama ILIKE '%terim%' kullanıyor; hiçbir B-tree indeksi bunu kullanamaz.
+  // pg_trgm, GIN trigram indeksiyle bu sorguyu indeksten karşılanabilir kılıyor.
+  extensions = [pg_trgm]
 }
 
 enum Role {
@@ -171,6 +176,19 @@ model Snippet {
   @@index([codeLanguage])
   @@index([createdBy])
   @@index([slug])
+
+  // `status` her listeleme sorgusunda filtreleniyordu ama indeksi yoktu.
+  // Bileşik indeksler en sık kullanılan iki erişim yolunu karşılıyor:
+  // "yayındakileri tarihe göre" ve "yayındakileri kategoriye göre".
+  @@index([status, publishedAt])
+  @@index([status, category])
+
+  // Arama `ILIKE '%terim%'` üretiyor; B-tree burada işe yaramaz çünkü
+  // desen baştan sabit değil. GIN + trigram bunu indeksten karşılanabilir kılar.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin)
+  // Etiket araması dizi içinde arama; GIN dizi indeksi bunu hızlandırır.
+  @@index([tags], type: Gin)
   @@map("snippets")
 }
 
@@ -196,6 +214,8 @@ model Comment {
 
   @@index([snippetId])
   @@index([userId])
+  // Yorum listesi kök yorumları tarihe göre çekiyor; sayfalama bu indeksle çalışır.
+  @@index([snippetId, parentCommentId, createdAt])
   @@map("comments")
 }
 

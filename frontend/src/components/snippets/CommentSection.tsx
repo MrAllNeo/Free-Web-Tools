@@ -12,7 +12,12 @@ import { useAuthStore } from '@/lib/store';
 import { Card } from '@/components/ui/Panel';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Field';
-import type { Comment } from '@/lib/types';
+import type { Comment, PaginationInfo } from '@/lib/types';
+
+interface CommentPage {
+  comments: Comment[];
+  pagination: PaginationInfo;
+}
 
 const timeAgo = (date: string) =>
   formatDistanceToNow(new Date(date), { addSuffix: true, locale: tr });
@@ -147,6 +152,13 @@ function CommentItem({
               nested
             />
           ))}
+
+          {/* Yanıtlar sunucuda 10 ile sınırlı; gizlenen varsa söylemek gerek. */}
+          {comment._count && comment._count.replies > comment.replies.length && (
+            <p className="ml-6 font-mono text-[11.5px] text-dim">
+              +{comment._count.replies - comment.replies.length} yanıt daha
+            </p>
+          )}
         </div>
       )}
     </Card>
@@ -166,12 +178,17 @@ export function CommentSection({
   const [content, setContent] = useState('');
   const [rating, setRating] = useState<number | null>(null);
 
-  const { data, isLoading } = useQuery<{ comments: Comment[] }>({
-    queryKey: ['comments', snippetId],
-    queryFn: () => api.get<{ comments: Comment[] }>(`/snippets/${snippetId}/comments`),
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading } = useQuery<CommentPage>({
+    queryKey: ['comments', snippetId, page],
+    queryFn: () => api.get<CommentPage>(`/snippets/${snippetId}/comments?page=${page}`),
+    // Sayfa değişirken listenin boşalıp zıplaması yerine öncekini gösteriyoruz.
+    placeholderData: (previous) => previous,
   });
 
   const comments = data?.comments ?? [];
+  const pagination = data?.pagination;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['comments', snippetId] });
@@ -314,6 +331,28 @@ export function CommentSection({
               isDeleting={remove.isPending}
             />
           ))}
+
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 pt-4">
+              <Button
+                variant="ghost"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+              >
+                ← önceki
+              </Button>
+              <span className="font-mono text-[12px] text-dim">
+                {pagination.page} / {pagination.totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= pagination.totalPages}
+              >
+                sonraki →
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-12 border border-dashed border-line rounded-md">

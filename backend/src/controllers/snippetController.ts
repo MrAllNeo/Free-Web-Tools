@@ -63,11 +63,23 @@ export async function listSnippets(req: Request, res: Response, next: NextFuncti
     if (language) where.codeLanguage = language;
     if (difficulty) where.difficulty = difficulty;
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { tags: { hasSome: [search.toLowerCase()] } },
-      ];
+      // Sorgu kelimelere bölünüp her kelime ayrı ayrı aranıyor: "css grid" artık
+      // yalnızca bu iki kelimenin bitişik geçtiği yerleri değil, ikisini de içeren
+      // snippet'leri buluyor. Kelimeler arasında AND, alanlar arasında OR.
+      //
+      // Kelime sayısı sınırlı: her kelime üç ILIKE daha ekliyor ve uzun bir cümle
+      // yapıştırıldığında sorgu gereksiz yere pahalılaşır.
+      const terms = search.trim().split(/\s+/).filter(Boolean).slice(0, 6);
+
+      if (terms.length > 0) {
+        where.AND = terms.map((term) => ({
+          OR: [
+            { title: { contains: term, mode: 'insensitive' } },
+            { description: { contains: term, mode: 'insensitive' } },
+            { tags: { has: term.toLowerCase() } },
+          ],
+        }));
+      }
     }
 
     // Build orderBy

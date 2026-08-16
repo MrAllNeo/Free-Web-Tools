@@ -122,7 +122,7 @@ POST   /api/snippets                       oluştur (giriş yapan herkes; yayım
 PUT    /api/snippets/:id                   güncelle (sahip/admin)
 DELETE /api/snippets/:id                   sil (sahip/admin)
 
-GET    /api/snippets/:id/comments          yorum ağacı (yanıtlarla)
+GET    /api/snippets/:id/comments          yorum ağacı — sayfalı (page, limit≤50), yanıtlar 10 ile sınırlı
 POST   /api/snippets/:id/comments          yorum + 1-5 puan
 POST   /api/snippets/:id/like | save       toggle
 GET    /api/snippets/:id/interaction       kullanıcının beğeni/kayıt durumu
@@ -151,6 +151,9 @@ PUT    /api/admin/reports/:id              şikayeti kapat
 GET    /api/admin/analytics                platform özeti
 ```
 
+**Sayfalama kuralı:** liste döndüren her yeni uç noktaya en baştan limit koy. `listComments`
+ve `listSaved` sınırsız yazılmıştı; sorun ancak veri büyüyünce görünür olur, o zaman da geç olur.
+
 **Rota sırası tuzağı:** `/stats` mutlaka `/:id`den, `/stats/:slug` de `/:slug`den,
 `/me/*` de `/:username`den **önce** tanımlanmalı — yoksa dinamik segment onları yutar.
 Aynı tuzak Next tarafında da var: `/profile/[username]` "snippets"i kullanıcı adı sanacağı
@@ -178,8 +181,8 @@ Saf kod — dış servis gerektirmez:
 | **C · Profil** | `/profile/[username]`, yazar adlarının link olması, kullanıcının snippet'leri | ✅ **bitti** |
 | **İ · Sahiplik** | Snippet düzenleme/silme, "snippet'lerim" (bekleyen+reddedilen), kaydedilenler | ✅ **bitti** |
 | **J · Topluluk** | İçerik bildirme, yorum bildirimi, bu yazardan diğerleri, paylaş düğmesi, yorum düzenleme | ✅ **bitti** |
-| **E · Moderasyon** | Hacking kategorisi için otomatik anahtar kelime filtresi | bekliyor |
-| **G · Arama** | Postgres tam metin arama, indeksler, yorumlarda sayfalama | bekliyor |
+| **G · Arama ve ölçek** | Trigram indeksleri, çok kelimeli arama, yorum sayfalama | ✅ **bitti** |
+| **E · Moderasyon filtresi** | Hacking için otomatik anahtar kelime taraması | ⏭️ **atlandı** — sahibi "çok detay" dedi (2026-08-16) |
 
 Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
 
@@ -199,6 +202,41 @@ Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
 | `2b9ff89` | **Grup C** — herkese açık profil sayfaları |
 
 Commit mesajları uzun ve gerekçeli yazıldı; bir kararın nedenini merak edersen önce oraya bak.
+
+**Grup G'de yapılanlar (arama ve ölçek):**
+
+**1. Trigram indeksleri.** Arama `ILIKE '%terim%'` üretiyor ve desen baştan sabit olmadığı
+için hiçbir B-tree indeksi kullanılamıyordu — her arama tam tablo taramasıydı. `pg_trgm`
+eklentisi Prisma'nın `postgresqlExtensions` önizleme özelliğiyle **şemadan** kuruluyor
+(`datasource db { extensions = [pg_trgm] }`), böylece `db push` yeterli; ayrı migration
+dosyasına gerek yok — bu proje migration kullanmıyor.
+
+`Snippet` üzerinde eklenen indeksler:
+```prisma
+@@index([status, publishedAt])                        // "yayındakiler, tarihe göre"
+@@index([status, category])                           // "yayındakiler, kategoriye göre"
+@@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
+@@index([description(ops: raw("gin_trgm_ops"))], type: Gin)
+@@index([tags], type: Gin)
+```
+`status` her listeleme sorgusunda filtreleniyordu ama **hiç indeksi yoktu**.
+
+**Ölçüldü:** 5.000 satırlık sentetik veriyle, az eşleşen bir terim için aynı sorgu
+indeksle **0,67 ms**, `enable_bitmapscan=off` ile **23,6 ms** — ~35 kat. Sık eşleşen
+terimlerde planlayıcı `LIMIT` varken yine tarama seçebilir; bu normal ve doğrudur.
+Kıyas verisi sonrasında silindi.
+
+**2. Çok kelimeli arama.** Eskiden sorgu tek bir alt dize olarak aranıyordu: "grid css"
+**sıfır** sonuç veriyordu çünkü bu iki kelime bitişik geçmiyordu. Artık sorgu kelimelere
+bölünüyor, **kelimeler arasında AND, alanlar (başlık/açıklama/etiket) arasında OR**.
+"css grid" ve "grid css" aynı 2 sonucu veriyor. Kelime sayısı 6 ile sınırlı — her kelime
+üç ILIKE daha ekliyor ve yapıştırılan uzun bir cümle sorguyu gereksiz pahalılaştırır.
+
+**3. Yorum sayfalama.** `listComments` **sınırsızdı**: popüler bir snippet tüm yorumlarını,
+tüm yanıtlarıyla birlikte tek yanıtta döndürürdü. Artık `page`/`limit` (varsayılan 20,
+en fazla 50) ve `pagination` bilgisi dönüyor. Bir yorumun altındaki **yanıtlar da 10 ile
+sınırlı**; `_count.replies` gerçek toplamı taşıyor ve arayüz "+N yanıt daha" gösteriyor.
+`Comment` üzerine `@@index([snippetId, parentCommentId, createdAt])` eklendi.
 
 **Grup J'de yapılanlar:** İki yeni model — `Notification` ve `Report`.
 
@@ -331,6 +369,11 @@ Aynı checkout'ta iki dev sunucusu çalışırsa ya da bir dev sunucusu yazma s�
 sayfalar derlendikçe *birer birer* düşüyor. Log: `frontend/.next/dev/logs/next-development.log`
 → `Failed to restore task data`. **Çözüm:** `npm run clean && npm run dev`.
 `predev` guard'ı (`scripts/dev-cache-guard.mjs`) build-sonrası-dev durumunu otomatik yakalıyor.
+
+**2b. Prisma önizleme özelliği + `db push` ile eklenti kurulabiliyor.** Migration dosyası
+olmadan da `datasource db { extensions = [pg_trgm] }` + `previewFeatures = ["postgresqlExtensions"]`
+eklentiyi kuruyor ve `@@index(..., type: Gin)` indeksleri oluşturuyor. Bu proje migration
+kullanmadığı için tek yol bu; ham SQL yazmaya kalkma.
 
 **2a. Prisma'da `onDelete` belirtmezsen zorunlu ilişkilerde varsayılan `Restrict`tir.**
 `ContributionHistory.snippet` böyleydi ve **onaylanmış snippet silinemiyordu** — moderasyondan
