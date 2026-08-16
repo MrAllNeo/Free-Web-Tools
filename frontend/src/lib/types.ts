@@ -1,3 +1,27 @@
+/**
+ * Herkese açık profil yanıtı.
+ *
+ * `User`den ayrı bir tip: sunucu burada bilinçli olarak `email` ve `lastLogin`
+ * göndermiyor. Aynı tipi paylaşsaydık arayüz var olmayan alanları bekleyebilirdi.
+ */
+export interface PublicProfile {
+  user: {
+    id: string;
+    username: string;
+    fullName?: string;
+    bio?: string;
+    role: 'guest' | 'user' | 'contributor' | 'admin';
+    reputationScore: number;
+    profileVerified: boolean;
+    avatarUrl?: string;
+    githubUrl?: string;
+    websiteUrl?: string;
+    createdAt: string;
+  };
+  snippets: Snippet[];
+  stats: { snippets: number; likes: number; views: number };
+}
+
 export interface User {
   id: string;
   email: string;

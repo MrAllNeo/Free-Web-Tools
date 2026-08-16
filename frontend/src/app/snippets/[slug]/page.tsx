@@ -212,17 +212,20 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
               <h3 className="font-mono text-[11px] text-dim uppercase tracking-[0.08em] mb-4">
                 Ekleyen
               </h3>
-              <div className="flex items-center gap-3 mb-4">
+              <Link
+                href={`/profile/${snippet.author.username}`}
+                className="flex items-center gap-3 mb-4 group/author rounded-xs -m-1 p-1 hover:bg-line-soft/50 transition-colors"
+              >
                 <span className="w-11 h-11 rounded-xs bg-amber/15 border border-amber-dim flex items-center justify-center text-amber font-mono text-[16px] font-bold shrink-0">
                   {snippet.author.username[0].toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <span className="block text-[14px] font-semibold truncate">
+                  <span className="block text-[14px] font-semibold truncate group-hover/author:text-amber transition-colors">
                     {snippet.author.fullName || snippet.author.username}
                   </span>
                   <span className="font-mono text-[12px] text-dim">@{snippet.author.username}</span>
                 </div>
-              </div>
+              </Link>
               {snippet.author.reputationScore !== undefined && (
                 <div className="flex items-center gap-2 font-mono text-[12px] text-amber bg-amber/8 border border-amber-dim/40 px-3 py-2 rounded-xs">
                   <Star className="w-3.5 h-3.5 fill-current" />

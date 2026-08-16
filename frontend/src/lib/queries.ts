@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { SnippetStats } from '@/lib/types';
+import type { PublicProfile, SnippetStats } from '@/lib/types';
 
 /**
  * Ana sayfada hem hero istatistikleri hem kategori sayaçları aynı yanıtı kullanır.
@@ -10,3 +10,9 @@ export const snippetStatsQuery = {
   queryFn: () => api.get<SnippetStats>('/snippets/stats'),
   staleTime: 5 * 60 * 1000,
 };
+
+export const publicProfileQuery = (username: string) => ({
+  queryKey: ['profile', username] as const,
+  queryFn: () => api.get<PublicProfile>(`/users/${encodeURIComponent(username)}`),
+  staleTime: 60 * 1000,
+});

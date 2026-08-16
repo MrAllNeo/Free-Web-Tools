@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Save } from 'lucide-react';
+import { ExternalLink, Loader2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
@@ -116,6 +117,15 @@ export default function ProfilePage() {
             <p className="font-mono text-[12.5px] text-dim mb-4">@{user.username}</p>
 
             <Badge tone={user.role === 'admin' ? 'danger' : 'amber'}>{ROLE_LABEL[user.role]}</Badge>
+
+            {/* Kullanıcı, profilinin başkalarına nasıl göründüğünü görebilmeli. */}
+            <Link
+              href={`/profile/${user.username}`}
+              className="mt-4 inline-flex items-center gap-1.5 font-mono text-[12px] text-dim hover:text-amber transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              herkese açık profilim
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-4 border-t border-line-soft mt-6 pt-5">

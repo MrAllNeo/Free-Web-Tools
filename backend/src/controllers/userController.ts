@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { updateProfileSchema } from '../utils/validators';
 import { AuthRequest } from '../middleware/auth';
@@ -20,6 +20,98 @@ const PUBLIC_USER_FIELDS = {
   lastLogin: true,
   _count: { select: { snippets: true, comments: true } },
 } as const;
+
+/**
+ * Herkese açık profilde gösterilecek alanlar.
+ *
+ * `PUBLIC_USER_FIELDS`ten ayrı tutuluyor: orası kullanıcının **kendi** hesabı için
+ * ve `email` ile `lastLogin` içeriyor. Bunları yabancılara açmak kişisel veri
+ * sızıntısı olurdu — e-posta spam hedefi, son giriş ise çevrimiçi olma bilgisi.
+ */
+const PROFILE_FIELDS = {
+  id: true,
+  username: true,
+  fullName: true,
+  bio: true,
+  role: true,
+  reputationScore: true,
+  profileVerified: true,
+  avatarUrl: true,
+  githubUrl: true,
+  websiteUrl: true,
+  createdAt: true,
+} as const;
+
+/**
+ * Kullanıcı adına göre herkese açık profil: kullanıcı bilgisi + yayınlanmış
+ * snippet'leri. Onay bekleyen ya da reddedilmiş snippet'ler burada görünmez.
+ */
+export async function getPublicProfile(
+  // Express 5 params'ı `string | string[]` olarak tipliyor; generic ile daraltıyoruz.
+  req: Request<{ username: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { username } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: PROFILE_FIELDS,
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const [snippets, totalLikes] = await Promise.all([
+      prisma.snippet.findMany({
+        where: { createdBy: user.id, status: 'approved' },
+        orderBy: { publishedAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          codeLanguage: true,
+          category: true,
+          difficulty: true,
+          tags: true,
+          codeContent: true,
+          demoHtml: true,
+          mediaType: true,
+          videoUrl: true,
+          videoDurationSeconds: true,
+          imageUrl: true,
+          viewsCount: true,
+          likesCount: true,
+          commentsCount: true,
+          averageRating: true,
+          createdAt: true,
+          author: { select: { id: true, username: true, avatarUrl: true } },
+        },
+      }),
+      prisma.snippet.aggregate({
+        where: { createdBy: user.id, status: 'approved' },
+        _sum: { likesCount: true, viewsCount: true },
+      }),
+    ]);
+
+    res.json({
+      user,
+      snippets,
+      stats: {
+        snippets: snippets.length,
+        likes: totalLikes._sum.likesCount ?? 0,
+        views: totalLikes._sum.viewsCount ?? 0,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function updateMe(
   req: AuthRequest,
