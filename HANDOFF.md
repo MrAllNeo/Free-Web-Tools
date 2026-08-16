@@ -3,7 +3,7 @@
 > Bu dosya, projede çalışan yapay zekâ asistanlarının (Claude / ChatGPT) ortak referansıdır.
 > Amaç: biri limitine takıldığında diğerinin sıfırdan keşif yapmadan kaldığı yerden devam edebilmesi.
 >
-> **Son güncelleme:** 2026-08-16 · **Son kod commit'i:** `2b9ff89` · **Repo:** https://github.com/MrAllNeo/Free-Web-Tools (public)
+> **Son güncelleme:** 2026-08-16 · **Son kod commit’i:** `4f961a4` · **Repo:** https://github.com/MrAllNeo/Free-Web-Tools (public)
 >
 > Repo public ama **lisans dosyası yok** — bu hukuken "tüm hakları saklı" demek. Sahibi
 > bunu bilerek böyle bırakmayı seçti; README ve footer'daki "açık kaynak" ibareleri kaldırıldı.
