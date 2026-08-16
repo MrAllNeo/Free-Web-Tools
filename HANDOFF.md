@@ -82,7 +82,8 @@ Bunlar keyfi değil; değiştirmeden önce gerekçeyi tart.
 | **Araç mantığı `lib/tools/` altında saf fonksiyon** | Ana sayfadaki canlı demo paneli ile `/tools/<slug>` sayfası aynı kodu paylaşsın; iki ayrı implementasyon sapmasın. |
 | **12 araç tamamen istemci tarafında** | Sunucu maliyeti sıfır, veri kullanıcının cihazından çıkmaz, çevrimdışı çalışır. Sadece link kısaltma sunucu gerektiriyor (kısa kod bir yerde saklanmalı). |
 | **Frontend snippet'leri her zaman canlı** | Ürün kuralı. Sunucu `mediaType`'ı kullanıcıya güvenmek yerine kendisi çözer (`resolveMediaType`), böylece kategori değişince tutarsız duruma düşülemez. |
-| **Lisans dosyası yok, repo kapalı** | Kullanıcı telif satırı istemiyor **ve** repoyu private yapmayı seçti (2026-08-08). Lisanssız repo hukuken "tüm hakları saklı" sayılır; repo kapalı olduğu için artık çelişki yok. README'deki "fully open source" bölümü ve footer'daki "açık kaynak" ibaresi kaldırıldı. Repo tekrar public yapılırsa lisans sorusu yeniden gündeme gelir. |
+| **Lisans dosyası yok, repo public kaldı** | Kullanıcı telif satırı istemiyor. Repoyu private yapmak gündeme geldi ama vazgeçildi (2026-08-16). Lisanssız repo hukuken "tüm hakları saklı" sayılır; çelişkiyi gidermek için README'deki "fully open source" bölümü ve footer'daki "açık kaynak" ibaresi kaldırıldı. Lisans eklenirse (The Unlicense / CC0 önerilmişti) durum netleşir. |
+| **Moderasyon rol değil kategori odaklı** | Hacking içeriği katkıcıdan gelse bile incelenir. Rolü yüksek olan kullanıcının riskli içeriği denetimsiz geçirmesi, platformun kendi yayımladığı politikayla çelişirdi. |
 
 ---
 
@@ -117,8 +118,8 @@ POST   /api/auth/register | login          GET /api/auth/me
 GET    /api/snippets                       liste (sayfalama, filtre, arama, sıralama)
 GET    /api/snippets/stats                 toplam, kategori kırılımı, ort. puan
 GET    /api/snippets/:idOrSlug             detay
-POST   /api/snippets                       oluştur (contributor/admin)
-PUT    /api/snippets/:id                   güncelle (sahip)
+POST   /api/snippets                       oluştur (giriş yapan herkes; yayım kararı autoApproves)
+PUT    /api/snippets/:id                   güncelle (sahip/admin)
 DELETE /api/snippets/:id                   sil (sahip/admin)
 
 GET    /api/snippets/:id/comments          yorum ağacı (yanıtlarla)
@@ -128,6 +129,8 @@ GET    /api/snippets/:id/interaction       kullanıcının beğeni/kayıt durumu
 
 PUT    /api/users/me                       profil güncelle
 GET    /api/users/me/saved                 kaydedilenler
+GET    /api/users/me/snippets              kendi snippet'leri — HER statüde + red gerekçesi
+GET    /api/users/:username                herkese açık profil (e-posta/son giriş DÖNMEZ)
 DELETE /api/users/comments/:id             yorum sil (sahip/admin)
 
 POST   /api/links/shorten                  misafir de kullanabilir
@@ -139,8 +142,10 @@ PUT    /api/admin/snippets/:id/status      onayla/reddet (+gerekçe)
 GET    /api/admin/analytics                platform özeti
 ```
 
-**Rota sırası tuzağı:** `/stats` mutlaka `/:id`den, `/stats/:slug` de `/:slug`den
-**önce** tanımlanmalı — yoksa dinamik segment onları yutar.
+**Rota sırası tuzağı:** `/stats` mutlaka `/:id`den, `/stats/:slug` de `/:slug`den,
+`/me/*` de `/:username`den **önce** tanımlanmalı — yoksa dinamik segment onları yutar.
+Aynı tuzak Next tarafında da var: `/profile/[username]` "snippets"i kullanıcı adı sanacağı
+için hesap sayfaları `/my/...` altında duruyor.
 
 ---
 
