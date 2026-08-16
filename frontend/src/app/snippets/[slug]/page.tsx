@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import {
+  AlertCircle,
   ArrowLeft,
   BookOpen,
   Calendar,
@@ -14,10 +15,12 @@ import {
   Heart,
   Loader2,
   MessageSquare,
+  Pencil,
   Shield,
   Star,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 import { CodeViewer } from '@/components/snippets/CodeViewer';
 import { SnippetMedia, mediaHeading } from '@/components/snippets/SnippetMedia';
 import { CommentSection } from '@/components/snippets/CommentSection';
@@ -50,6 +53,7 @@ interface SnippetPageProps {
 
 export default function SnippetDetailPage({ params }: SnippetPageProps) {
   const { slug } = use(params);
+  const { user } = useAuthStore();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['snippet', slug],
@@ -83,6 +87,7 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
   }
 
   const snippet = data.snippet;
+  const canEdit = user?.id === snippet.author.id || user?.role === 'admin';
   const difficulty = DIFFICULTIES.find((d) => d.id === snippet.difficulty);
   const isHacking = snippet.category === 'hacking';
 
@@ -114,12 +119,58 @@ export default function SnippetDetailPage({ params }: SnippetPageProps) {
               )}
             </div>
 
-            <InteractionButtons
-              snippetId={snippet.id}
-              snippetSlug={snippet.slug}
-              likesCount={snippet.likesCount}
-            />
+            <div className="flex items-center gap-2">
+              {canEdit && (
+                <Link
+                  href={`/snippets/${snippet.slug}/edit`}
+                  className="inline-flex items-center gap-1.5 font-mono text-[12.5px] text-dim hover:text-amber transition-colors px-2.5 py-1.5 rounded-xs border border-line hover:border-amber-dim"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  düzenle
+                </Link>
+              )}
+              <InteractionButtons
+                snippetId={snippet.id}
+                snippetSlug={snippet.slug}
+                likesCount={snippet.likesCount}
+              />
+            </div>
           </div>
+
+          {/*
+            Sahibi artık yayınlanmamış snippet'ini görebiliyor; hangi aşamada
+            olduğunu ve reddedildiyse nedenini burada söylüyoruz.
+          */}
+          {canEdit && snippet.status !== 'approved' && (
+            <div
+              className={`flex gap-3 mb-5 p-4 rounded-sm border ${
+                snippet.status === 'rejected'
+                  ? 'bg-danger/8 border-danger/40'
+                  : 'bg-amber/8 border-amber-dim/40'
+              }`}
+            >
+              <AlertCircle
+                className={`w-4 h-4 shrink-0 mt-0.5 ${
+                  snippet.status === 'rejected' ? 'text-danger' : 'text-amber'
+                }`}
+              />
+              <div className="text-[12.5px] text-muted">
+                {snippet.status === 'rejected' ? (
+                  <>
+                    <strong className="text-fg">Bu snippet reddedildi</strong> ve yayında görünmüyor.
+                    {snippet.rejectionReason && (
+                      <span className="block mt-1">Gerekçe: {snippet.rejectionReason}</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-fg">Bu snippet henüz yayında değil.</strong> Şu an
+                    yalnızca sen ve yöneticiler görebiliyor.
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           <h1 className="font-mono text-[26px] sm:text-[32px] font-bold leading-[1.18] tracking-[-0.02em] mb-3">
             {snippet.title}

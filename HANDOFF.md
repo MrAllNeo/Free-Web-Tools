@@ -162,6 +162,8 @@ Saf kod — dış servis gerektirmez:
 | **A · Güvenlik** | Hız sınırlama, gövde boyutu limiti, vekil arkasında doğru IP | ✅ **bitti** |
 | **B · Test altyapısı** | Vitest + 130 test: araçların saf mantığı, önizleme kuralları, `urlSafety`, doğrulayıcılar | ✅ **bitti** |
 | **C · Profil** | `/profile/[username]`, yazar adlarının link olması, kullanıcının snippet'leri | ✅ **bitti** |
+| **İ · Sahiplik** | Snippet düzenleme/silme, "snippet'lerim" (bekleyen+reddedilen), kaydedilenler | ✅ **bitti** |
+| **J · Topluluk** | İçerik bildirme, yorum bildirimi, bu yazardan diğerleri, paylaş düğmesi, yorum düzenleme | bekliyor |
 | **E · Moderasyon** | Hacking kategorisi için otomatik anahtar kelime filtresi | bekliyor |
 | **G · Arama** | Postgres tam metin arama, indeksler, yorumlarda sayfalama | bekliyor |
 
@@ -183,6 +185,42 @@ Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
 | `2b9ff89` | **Grup C** — herkese açık profil sayfaları |
 
 Commit mesajları uzun ve gerekçeli yazıldı; bir kararın nedenini merak edersen önce oraya bak.
+
+**Grup İ'de yapılanlar:** Katkıcı artık kendi içeriğinin sahibi:
+- `/snippets/[slug]/edit` — düzenleme + silme. Form `components/snippets/SnippetForm.tsx`e
+  çıkarıldı ve gönderim sayfasıyla **paylaşılıyor**; iki kopya tutulsaydı biri güncellenip
+  diğeri unutulurdu (demo HTML alanı tam da böyle sessizce silinebilirdi).
+- `/my/snippets` — kendi snippet'leri, **her statüde**; reddedilenler gerekçesiyle.
+- `/my/saved` — kaydedilenler. Kaydetme düğmesi bugüne kadar hiçbir yere gitmiyordu.
+- `getSnippet` artık statüyü sorgudan sonra kontrol ediyor: sahibi ve yönetici kendi
+  yayınlanmamış snippet'ini görebilir, başkasına **404** döner (403 kaydın varlığını doğrulardı).
+  Rotada `optionalAuth` var. Sahibinin kendi ziyareti görüntülenme sayılmıyor.
+- `listSaved` eksik alanlar döndürüyordu (`codeContent`, `demoHtml`, `mediaType`, `imageUrl`);
+  kaydedilenler listesinde kartlar boş görünürdü.
+
+Rotalar `/my/...` altında, `/profile/...` altında **değil**: `/profile/[username]` dinamik
+segmenti "snippets"/"saved" kullanıcı adlarıyla çakışırdı.
+
+Düzenlemede statü **bilinçli olarak** değiştirilmiyor. Snippet oluşturma zaten yalnızca
+contributor/admin'e açık ve o roller otomatik onaylanıyor; düzenlemeyi tekrar kuyruğa
+sokmak moderasyon açısından bir şey kazandırmaz, sadece can sıkardı.
+
+**Moderasyon artık gerçekten çalışıyor (sahibinin kararı, 2026-08-16).** Önceden `pending`
+durumu erişilemezdi: gönderim `requireRole('contributor','admin')` ile sınırlıydı ve o iki rol
+otomatik onaylanıyordu, yani kuyruk kalıcı olarak boştu.
+
+Şimdi giriş yapan **herkes** gönderebiliyor; yayımlanıp yayımlanmayacağına
+`autoApproves(role, category)` karar veriyor (`snippetController.ts`):
+
+| Kim | Ne gönderiyor | Sonuç |
+|-----|---------------|-------|
+| Yönetici | her şey | doğrudan yayımlanır |
+| Katkıcı | frontend/backend | doğrudan yayımlanır |
+| Katkıcı | **hacking** | **incelemeye girer** |
+| Diğer herkes | her şey | incelemeye girer |
+
+Hacking istisnası bilinçli: platformun açık politikası "her hacking gönderimi yayından önce
+incelenir". Rol yüzünden kendi kuralımızı delmiyoruz.
 
 **Grup C'de yapılanlar:** `GET /api/users/:username` herkese açık profil döndürüyor —
 kullanıcı + yayınlanmış snippet'leri (en fazla 50) + toplam görüntülenme/beğeni.
@@ -260,6 +298,11 @@ Aynı checkout'ta iki dev sunucusu çalışırsa ya da bir dev sunucusu yazma s�
 sayfalar derlendikçe *birer birer* düşüyor. Log: `frontend/.next/dev/logs/next-development.log`
 → `Failed to restore task data`. **Çözüm:** `npm run clean && npm run dev`.
 `predev` guard'ı (`scripts/dev-cache-guard.mjs`) build-sonrası-dev durumunu otomatik yakalıyor.
+
+**2a. Prisma'da `onDelete` belirtmezsen zorunlu ilişkilerde varsayılan `Restrict`tir.**
+`ContributionHistory.snippet` böyleydi ve **onaylanmış snippet silinemiyordu** — moderasyondan
+geçen her snippet bir katkı kaydı oluşturduğu için "snippet'ini sil" tam da yayınlanmış
+içerikte kırılıyordu. Yeni ilişki eklerken silme davranışını açıkça yaz.
 
 **2. Prisma şeması değişince backend'i yeniden başlat.**
 `prisma generate` çalışsa bile çalışan süreç eski istemciyi bellekte tutuyor →

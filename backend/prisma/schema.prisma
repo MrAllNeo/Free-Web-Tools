@@ -218,8 +218,14 @@ model ContributionHistory {
   createdAt DateTime           @default(now()) @map("created_at")
 
   // Relations
-  user    User    @relation(fields: [userId], references: [id])
-  snippet Snippet @relation(fields: [snippetId], references: [id])
+  //
+  // İkisi de Cascade: `onDelete` belirtilmediğinde Prisma zorunlu ilişkilerde
+  // Restrict uygular ve katkı geçmişi kaydı olan bir snippet SİLİNEMİYORDU.
+  // Moderasyondan onay alan her snippet böyle bir kayıt oluşturduğundan,
+  // "snippet'ini sil" özelliği tam da yayınlanmış snippet'lerde kırılıyordu.
+  // Kayıt bir denetim izi; snippet gidince onunla birlikte gitmesi doğru.
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snippet Snippet @relation(fields: [snippetId], references: [id], onDelete: Cascade)
 
   @@map("contribution_history")
 }

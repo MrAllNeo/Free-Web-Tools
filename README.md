@@ -212,7 +212,9 @@ Posting a rating recalculates the snippet's average automatically, and an approv
 
 ## Content policy
 
-**Educational content only.** No malware, ransomware, credential stealers, phishing kits, or DDoS tooling. Penetration-testing techniques, vulnerability analysis, CTF write-ups, and bug-bounty reports are welcome — every Hacking-category submission passes through admin review before it is published, and code in that category is never executable on the platform.
+**Educational content only.** No malware, ransomware, credential stealers, phishing kits, or DDoS tooling. Penetration-testing techniques, vulnerability analysis, CTF write-ups, and bug-bounty reports are welcome — every Hacking-category submission passes through admin review before it is published, whatever the author's role, and code in that category is never executable on the platform.
+
+Anyone with an account can submit. Submissions are published straight away only for admins, and for contributors outside the Hacking category; everything else waits in the moderation queue. You can always see your own pending and rejected snippets — with the reviewer's reason — under **My snippets**.
 
 ## Contributing
 

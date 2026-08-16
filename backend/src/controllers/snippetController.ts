@@ -167,17 +167,19 @@ export async function getSnippetStats(
   }
 }
 
-export async function getSnippet(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getSnippet(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params.id as string;
 
+    // Statü filtresi sorguda değil, sonrasında uygulanıyor: sahibinin kendi
+    // onay bekleyen snippet'ini görebilmesi gerekiyor. Aksi hâlde katkıcı
+    // gönderdiği şeyi hiçbir yerde göremiyordu.
     const snippet = await prisma.snippet.findFirst({
       where: {
         OR: [
           { id: id },
           { slug: id },
         ],
-        status: 'approved',
       },
       include: {
         author: {
@@ -211,16 +213,45 @@ export async function getSnippet(req: Request, res: Response, next: NextFunction
       return;
     }
 
+    // Yayınlanmamış snippet yalnızca sahibine ve yöneticiye görünür. Başkasına
+    // 403 yerine 404 dönüyoruz: 403, var olmayan bir kaydın varlığını doğrular.
+    const isOwner = req.user?.id === snippet.createdBy;
+    const isAdmin = req.user?.role === 'admin';
+    if (snippet.status !== 'approved' && !isOwner && !isAdmin) {
+      res.status(404).json({ error: 'Snippet not found' });
+      return;
+    }
+
     // Increment view count (fire and forget)
-    prisma.snippet.update({
-      where: { id: snippet.id },
-      data: { viewsCount: { increment: 1 } },
-    }).catch(() => {});
+    // Sahibinin kendi sayfasını açması görüntülenme sayılmaz — yoksa katkıcı
+    // kendi snippet'ini kontrol ettikçe sayaç şişer.
+    if (!isOwner) {
+      prisma.snippet.update({
+        where: { id: snippet.id },
+        data: { viewsCount: { increment: 1 } },
+      }).catch(() => {});
+    }
 
     res.json({ snippet });
   } catch (error) {
     next(error);
   }
+}
+
+/**
+ * Gönderim doğrudan yayımlansın mı, yoksa moderasyon kuyruğuna mı girsin?
+ *
+ * - **Yönetici**: her zaman doğrudan yayımlar.
+ * - **Katkıcı**: frontend/backend içeriğini doğrudan yayımlar.
+ * - **Hacking kategorisi**: katkıcı bile olsa incelemeye girer. Platformun açık
+ *   politikası "her hacking gönderimi yayından önce incelenir" — kendi kuralımızı
+ *   rol yüzünden delmeyelim.
+ * - **Diğer herkes**: incelemeye girer.
+ */
+function autoApproves(role: string, category: string): boolean {
+  if (role === 'admin') return true;
+  if (category === 'hacking') return false;
+  return role === 'contributor';
 }
 
 export async function createSnippet(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -255,9 +286,8 @@ export async function createSnippet(req: AuthRequest, res: Response, next: NextF
         isExecutable: data.isExecutable,
         canDownload: data.canDownload,
         createdBy: req.user.id,
-        // Auto-approve for admins and contributors
-        status: ['admin', 'contributor'].includes(req.user.role) ? 'approved' : 'pending',
-        publishedAt: ['admin', 'contributor'].includes(req.user.role) ? new Date() : null,
+        status: autoApproves(req.user.role, data.category) ? 'approved' : 'pending',
+        publishedAt: autoApproves(req.user.role, data.category) ? new Date() : null,
       },
       include: {
         author: {

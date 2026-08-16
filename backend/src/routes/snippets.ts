@@ -13,7 +13,7 @@ import {
   toggleLike,
   toggleSave,
 } from '../controllers/interactionController';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { optionalAuth, requireAuth } from '../middleware/auth';
 import { writeLimiter } from '../middleware/rateLimit';
 
 export const snippetRouter = Router();
@@ -22,13 +22,17 @@ export const snippetRouter = Router();
 snippetRouter.get('/', listSnippets);
 // `/stats` mutlaka `/:id`den önce tanımlanmalı, aksi hâlde id parametresi olarak yakalanır.
 snippetRouter.get('/stats', getSnippetStats);
-snippetRouter.get('/:id', getSnippet);
+// optionalAuth: giriş yapmış kullanıcı kendi yayınlanmamış snippet'ini görebilsin.
+snippetRouter.get('/:id', optionalAuth, getSnippet);
 snippetRouter.get('/:id/comments', listComments);
 
 // Authenticated routes
 // Yazma uçlarında ayrıca içerik üretim sınırı var; beğeni/kaydetme gibi geri
 // alınabilir ve ucuz işlemler genel tavana bırakıldı.
-snippetRouter.post('/', writeLimiter, requireAuth, requireRole('contributor', 'admin'), createSnippet);
+// Giriş yapan herkes gönderebilir; yayımlanıp yayımlanmayacağına `autoApproves`
+// karar veriyor. Rol kapısı buradayken moderasyon kuyruğu hiç dolmuyordu:
+// gönderebilen tek roller zaten otomatik onaylananlardı.
+snippetRouter.post('/', writeLimiter, requireAuth, createSnippet);
 snippetRouter.put('/:id', writeLimiter, requireAuth, updateSnippet);
 snippetRouter.delete('/:id', requireAuth, deleteSnippet);
 
