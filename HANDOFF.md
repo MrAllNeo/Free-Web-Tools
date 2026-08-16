@@ -3,7 +3,10 @@
 > Bu dosya, projede çalışan yapay zekâ asistanlarının (Claude / ChatGPT) ortak referansıdır.
 > Amaç: biri limitine takıldığında diğerinin sıfırdan keşif yapmadan kaldığı yerden devam edebilmesi.
 >
-> **Son güncelleme:** 2026-08-07 · **Son commit:** `ee526ef` · **Repo:** https://github.com/MrAllNeo/Free-Web-Tools (public)
+> **Son güncelleme:** 2026-08-16 · **Son kod commit'i:** `2b9ff89` · **Repo:** https://github.com/MrAllNeo/Free-Web-Tools (public)
+>
+> Repo public ama **lisans dosyası yok** — bu hukuken "tüm hakları saklı" demek. Sahibi
+> bunu bilerek böyle bırakmayı seçti; README ve footer'daki "açık kaynak" ibareleri kaldırıldı.
 
 ---
 
@@ -79,7 +82,7 @@ Bunlar keyfi değil; değiştirmeden önce gerekçeyi tart.
 | **Araç mantığı `lib/tools/` altında saf fonksiyon** | Ana sayfadaki canlı demo paneli ile `/tools/<slug>` sayfası aynı kodu paylaşsın; iki ayrı implementasyon sapmasın. |
 | **12 araç tamamen istemci tarafında** | Sunucu maliyeti sıfır, veri kullanıcının cihazından çıkmaz, çevrimdışı çalışır. Sadece link kısaltma sunucu gerektiriyor (kısa kod bir yerde saklanmalı). |
 | **Frontend snippet'leri her zaman canlı** | Ürün kuralı. Sunucu `mediaType`'ı kullanıcıya güvenmek yerine kendisi çözer (`resolveMediaType`), böylece kategori değişince tutarsız duruma düşülemez. |
-| **Lisans dosyası yok** | Kullanıcının açık talebi (telif satırı istemiyor). ⚠️ **Hukuken bu "tüm hakları saklı" demek** — README "fully open source" diyor ama lisans olmadan kimse yasal olarak kullanamaz. Kullanıcıya The Unlicense / CC0 önerildi, henüz karar vermedi. Bu çelişkiyi ona tekrar hatırlatmak yerinde olur. |
+| **Lisans dosyası yok, repo kapalı** | Kullanıcı telif satırı istemiyor **ve** repoyu private yapmayı seçti (2026-08-08). Lisanssız repo hukuken "tüm hakları saklı" sayılır; repo kapalı olduğu için artık çelişki yok. README'deki "fully open source" bölümü ve footer'daki "açık kaynak" ibaresi kaldırıldı. Repo tekrar public yapılırsa lisans sorusu yeniden gündeme gelir. |
 
 ---
 
@@ -150,12 +153,75 @@ Tüm planlanan fazlar bitti (`FWT_TECH_STACK_BLUEPRINT.md` referans alındı):
 - ✅ **Faz 4** — Yorumlar+puanlama, beğeni/kaydetme, moderasyon, analitik, link kısaltma
 - ✅ **Faz 5** — `sitemap.ts`, `robots.ts`, sayfa bazında metadata
 
-**Sırada (henüz yapılmadı):**
-1. Video yükleme (Cloudinary) — blueprint'te var, hiç başlanmadı
-2. Herkese açık profil sayfaları — `/profile/[username]` rotası **yok**, detay sayfasında yazar adı bu yüzden link değil
-3. Hacking içeriği için otomatik anahtar kelime filtresi (blueprint'te moderasyon gereksinimi)
-4. E-posta doğrulama + bildirimler
-5. Ölçekte arama (şu an basit `contains` sorgusu)
+**Kalan işler gruplara bölündü (2026-08-16).** Sırayla ilerliyoruz; grup bitmeden diğerine geçme.
+
+Saf kod — dış servis gerektirmez:
+
+| Grup | İçerik | Durum |
+|------|--------|-------|
+| **A · Güvenlik** | Hız sınırlama, gövde boyutu limiti, vekil arkasında doğru IP | ✅ **bitti** |
+| **B · Test altyapısı** | Vitest + 130 test: araçların saf mantığı, önizleme kuralları, `urlSafety`, doğrulayıcılar | ✅ **bitti** |
+| **C · Profil** | `/profile/[username]`, yazar adlarının link olması, kullanıcının snippet'leri | ✅ **bitti** |
+| **E · Moderasyon** | Hacking kategorisi için otomatik anahtar kelime filtresi | bekliyor |
+| **G · Arama** | Postgres tam metin arama, indeksler, yorumlarda sayfalama | bekliyor |
+
+Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
+
+| Grup | Neye bağlı |
+|------|-----------|
+| **D · Video/görsel yükleme** | Depolama servisi (Cloudinary vb.) |
+| **F · E-posta doğrulama + bildirim** | SMTP sağlayıcı |
+| **H · Dağıtım** | Hosting + CI hedefi |
+
+**Commit haritası** — hangi iş nerede (`git show <hash>` ile ayrıntısına bak):
+
+| Commit | İş |
+|--------|-----|
+| `3caf9b9` | README ve footer'dan "açık kaynak" ibaresinin kaldırılması |
+| `3284bef` | **Grup A** — hız sınırlama, gövde limiti, `TRUST_PROXY`, istemcide 429 ve JSON olmayan hata yanıtı |
+| `23561c2` | **Grup B** — Vitest + 130 test ve testlerin bulduğu üç hatanın düzeltilmesi |
+| `2b9ff89` | **Grup C** — herkese açık profil sayfaları |
+
+Commit mesajları uzun ve gerekçeli yazıldı; bir kararın nedenini merak edersen önce oraya bak.
+
+**Grup C'de yapılanlar:** `GET /api/users/:username` herkese açık profil döndürüyor —
+kullanıcı + yayınlanmış snippet'leri (en fazla 50) + toplam görüntülenme/beğeni.
+Rota dosyasında **en sonda**: dinamik segment `/me` ve `/comments/:id` yollarını yutmasın.
+
+⚠️ **`PROFILE_FIELDS`, `PUBLIC_USER_FIELDS`ten ayrıdır ve öyle kalmalı.** İkincisi kullanıcının
+kendi hesabı için ve `email` + `lastLogin` içeriyor; herkese açık profile eklenirse e-posta
+spam hedefi olur, son giriş de çevrimiçi olma bilgisini sızdırır. Frontend'de de ayrı tip var
+(`PublicProfile`), böylece arayüz var olmayan alanları beklemez.
+
+Olmayan kullanıcıda **gerçek 404**: sayfa istemci bileşeni olduğu için `notFound()` orada
+çağrılamıyor, kontrol `layout.tsx` içinde. API kapalıyken 404 basılmıyor — geçici kesinti
+kalıcı "yok" sinyaline dönüşmemeli.
+
+Yazar adı snippet detayında profile link; **kartlarda değil** — kartın tamamı zaten bir
+`<Link>`, içine link koymak geçersiz HTML olurdu.
+
+**Grup B'de yapılanlar:** Vitest 4 iki tarafa da kuruldu (`vitest.config.mts` — `.ts` uzantısı
+Vite'ın yeni yapılandırma yükleyicisinde uyarı üretiyor). Testler kaynağın yanında `*.test.ts`.
+Kökten `npm test` ikisini birden koşar. **130 test** (frontend 91, backend 39) —
+araçların saf mantığı, önizleme kuralları ve `urlSafety` güvenlik kapısı.
+
+Testler yazılırken **üç gerçek hata** çıktı, üçü de düzeltildi:
+1. **IPv6 loopback engeli çalışmıyordu.** `URL.hostname` IPv6'yı `"[::1]"` diye köşeli
+   parantezle döndürüyor, liste ise parantezsiz `::1` içeriyordu — eşleşme olmuyordu.
+   Artık parantez soyuluyor; ayrıca `::ffff:` (IPv4-eşlemeli), `fe80:`, `fc00::/7`,
+   tüm `127.` bloğu ve `169.254.` aralığı da kapatıldı.
+2. **`generatePassword` 16.384 karakterden uzun parolada çöküyordu** —
+   `crypto.getRandomValues` tek çağrıda 65.536 baytla sınırlı. Artık partiler hâlinde.
+   (Arayüz 64'te sınırladığı için kullanıcıya yansımıyordu.)
+3. **`escapeForScript` kodun harf yazımını bozuyordu** — `</SCRIPT>` küçük harfe çevriliyordu.
+
+**Grup A'da yapılanlar:** `middleware/rateLimit.ts` dört sınırlayıcı tanımlıyor — genel tavan
+(600/15dk), auth (10/15dk, başarılı girişler sayılmaz), link kısaltma (20/saat), yazma (40/15dk).
+Sayaçlar **süreç belleğinde**: birden fazla kopya çalıştırılırsa Redis gerekir. `TRUST_PROXY`
+ortam değişkeni vekil arkasında gerçek IP için; **vekil yokken açılmamalı**, yoksa istemci
+kendi IP'sini uydurup sınırı aşar. JSON gövde limiti 10 MB → 1 MB. İstemci tarafında
+`api.ts` artık HTTP durumunu da fırlatıyor ve JSON olmayan hata yanıtında çökmüyor;
+`getApiErrorMessage` 429'u Türkçe gösteriyor.
 
 **Son teknik güncelleme (2026-08-07):**
 - Çalıştırılamayan frontend snippet'leri (`CodeThumbnail`) kartta artık düz metin yerine
@@ -178,7 +244,9 @@ Tüm planlanan fazlar bitti (`FWT_TECH_STACK_BLUEPRINT.md` referans alındı):
 - **Sabit renk yok** — tasarım token'ları kullan: `bg-raised`, `text-muted`, `border-line`, `text-amber` vb. Ham hex yazma.
 - **Yorumlar *neden*i anlatır, *ne*yi değil.** Kodun kendisi ne yaptığını zaten söylüyor. Şaşırtıcı olan, tuzak olan, gerekçesi olmayan şeyi yaz.
 - Commit mesajları İngilizce, ne değişti + neden. Bulunan hataları ayrıca belirt.
-- **Doğrulama zorunlu:** `npm run typecheck && npm run lint && npm run build` yeşil olmadan commit yok. UI değişikliğinde ekran görüntüsüyle bak — bu oturumda birkaç hata sadece görsel kontrolde yakalandı.
+- **Doğrulama zorunlu:** `npm test && npm run typecheck && npm run lint && npm run build` yeşil
+  olmadan commit yok. Yeni saf mantık yazdıysan testini de yaz — `lib/tools/`, `lib/preview.ts`
+  ve `utils/` altındaki her şey test edilebilir olmalı. UI değişikliğinde ekran görüntüsüyle bak — bu oturumda birkaç hata sadece görsel kontrolde yakalandı.
 
 ---
 
