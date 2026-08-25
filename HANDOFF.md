@@ -208,6 +208,7 @@ Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
 | `3284bef` | **Grup A** — hız sınırlama, gövde limiti, `TRUST_PROXY`, istemcide 429 ve JSON olmayan hata yanıtı |
 | `23561c2` | **Grup B** — Vitest + 130 test ve testlerin bulduğu üç hatanın düzeltilmesi |
 | `2b9ff89` | **Grup C** — herkese açık profil sayfaları |
+| `368f2b2` | **Grup H (kod tarafı)** — göç dosyalarına geçiş, ortam doğrulaması ve `fallback-secret` açığının kapatılması, temiz klonda derleme düzeltmesi, üretimde tohumlama kilidi, `DEPLOY.md` |
 
 Commit mesajları uzun ve gerekçeli yazıldı; bir kararın nedenini merak edersen önce oraya bak.
 
