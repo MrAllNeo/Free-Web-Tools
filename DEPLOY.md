@@ -388,17 +388,26 @@ belleğinde tutuyor — her istek ayrı bir sunucusuz örneğe düşünce sını
 çalışmaz; ve her örnek kendi veritabanı bağlantı havuzunu açtığı için PostgreSQL
 bağlantıları hızla tükenir.
 
-Docker bekleyen ortamlar için `backend/Dockerfile` hazır:
+Docker bekleyen ortamlar için `backend/Dockerfile` hazır ve **derlenip
+çalıştırılarak doğrulandı** (2026-08-25): imaj 676 MB, konteyner veritabanına
+bağlanıp gerçek veriyi döndürüyor, `/api/health` üzerinden HEALTHCHECK çalışıyor
+ve göçler konteynerin içinden yürütülebiliyor.
 
 ```bash
 docker build -t fwt-backend ./backend
 docker run -p 3001:3001 --env-file backend/.env fwt-backend
+
+# Göçleri konteynerin içinden çalıştırmak:
+docker exec <konteyner> npx prisma migrate deploy
 ```
 
-> Bu Dockerfile geliştirme makinesinde Docker kurulu olmadığı için **yerelde
-> derlenerek denenmedi.** İçeriği projenin gerçek derleme adımlarıyla birebir
-> aynı ve o adımlar temiz bir kopyada test edildi; yine de ilk `docker build`
-> çıktısını dikkatli okuyun.
+> **`--env-file` imajdaki ayarları ezer.** `backend/.env` içinde
+> `NODE_ENV=development` satırı kalırsa bu bayrak konteynere de geçer. Bu
+> durumda üretime özel doğrulamalar (zayıf `JWT_SECRET`'in reddi, eksik
+> `FRONTEND_URL` kontrolü) devre dışı kalırdı — bu yüzden imaj `NODE_ENV`
+> değerini başlatma komutunda sabitliyor ve `.env` ne derse desin üretim kipinde
+> açılıyor. Yine de sunucudaki `.env` dosyasında `NODE_ENV=production` yazması
+> doğrusudur: systemd yolunda kip oradan okunuyor.
 
 ---
 

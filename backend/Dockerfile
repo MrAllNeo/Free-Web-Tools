@@ -63,4 +63,11 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/server.js"]
+# NODE_ENV komutun kendisi tarafından zorlanıyor, yalnızca yukarıdaki ENV ile değil.
+# Nedeni: `docker run --env-file backend/.env` ile verilen dosya imajdaki ENV
+# değerlerini EZER. Geliştirme .env'inde duran `NODE_ENV=development` satırı, bu
+# üretim imajını geliştirme kipinde açıyordu — ve üretime özel doğrulamalar
+# (zayıf JWT_SECRET'in reddi, eksik FRONTEND_URL) sessizce devre dışı kalıyordu.
+# Sessizce güvensiz açılmaktansa kip burada sabitlensin; bu imaj zaten yalnızca
+# üretim için var.
+CMD ["sh", "-c", "NODE_ENV=production exec node dist/server.js"]

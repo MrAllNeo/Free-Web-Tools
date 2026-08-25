@@ -268,9 +268,18 @@ HEALTHCHECK. `DEPLOY.md` baştan sona adım adım rehber: sunucu hazırlığı, 
 göç, ilk yönetici, systemd birimleri, nginx + certbot, **yedekleme cron'u**, güncelleme
 akışı, kontrol listesi, sorun giderme.
 
-**Not:** Dockerfile bu makinede Docker kurulu olmadığı için yerelde derlenerek denenmedi;
-içeriği test edilmiş derleme adımlarıyla aynı ama ilk `docker build` çıktısı dikkatle
-okunmalı. `DEPLOY.md` içinde de böyle yazıyor.
+**Dockerfile doğrulandı (2026-08-25, aynı gün).** Docker o sırada makinede kurulu değildi,
+sonra `docker.io` (26.1.5, Pardus/Debian deposundan) kuruldu ve imaj ilk denemede derlendi:
+676 MB, konteyner veritabanına bağlanıp gerçek snippet verisini döndürdü, `/api/health`
+yanıt verdi, `docker exec ... npx prisma migrate status` konteynerin içinden çalıştı.
+
+Test sırasında **gerçek bir tuzak çıktı ve düzeltildi:** `docker run --env-file backend/.env`
+ile verilen dosya imajdaki `ENV NODE_ENV=production` değerini **ezer**. Geliştirme .env'inde
+duran `NODE_ENV=development` satırı yüzünden üretim imajı geliştirme kipinde açılıyordu —
+yani yukarıdaki (2) numaralı doğrulamaların tamamı sessizce devre dışı kalıyordu; imaj zayıf
+bir `JWT_SECRET` ile sorunsuz çalışırdı. `CMD` artık kipi kendisi sabitliyor
+(`NODE_ENV=production exec node dist/server.js`). Düzeltme sonrası günlükte
+`Environment: production` doğrulandı.
 
 ---
 
@@ -513,7 +522,12 @@ zamanını esbuild ile üretiyor ve esbuild bir devDependency; ayrıca çıktı
 (`frontend/public/preview/`) gitignore'lu, yani sunucuda üretilmek zorunda. Sunucuda
 `npm ci --omit=dev` **kullanma**, derleme kırılır.
 
-**12. `npm audit` üç yüksek uyarı gösteriyor, düzeltme denemesi zarar verir.** Uyarı
+**12. `docker run --env-file` imajın `ENV` değerlerini ezer.** Bu, `NODE_ENV`i geliştirmeye
+düşürüp üretim doğrulamalarını sessizce kapatıyordu. `backend/Dockerfile` artık kipi `CMD`
+içinde sabitliyor. Aynı kural systemd'de **tersine** işler: dotenv mevcut ortam değişkenlerini
+ezmez, yani birim dosyasındaki `Environment=NODE_ENV=production` `.env`e üstün gelir.
+
+**13. `npm audit` üç yüksek uyarı gösteriyor, düzeltme denemesi zarar verir.** Uyarı
 `prisma` CLI'ın yapılandırma okuyucusundaki `deepmerge-ts`ten geliyor ve yalnızca kendi
 `prisma.config.ts` dosyamız işlenirken tetiklenebilir — dışarıdan gelen veriye dokunmuyor.
 `npm audit fix --force` prisma'yı 6.12'ye düşürür; yapma.
