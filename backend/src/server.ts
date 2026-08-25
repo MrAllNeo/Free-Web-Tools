@@ -1,9 +1,8 @@
 import app from './app';
+import { env } from './config/env';
 import { logger } from './utils/logger';
 
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  logger.info(`🚀 Server running on http://localhost:${PORT}`);
-  logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+app.listen(env.PORT, () => {
+  logger.info(`🚀 Server running on port ${env.PORT}`);
+  logger.info(`📝 Environment: ${env.NODE_ENV}`);
 });

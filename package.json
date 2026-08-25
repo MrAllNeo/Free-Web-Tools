@@ -2,7 +2,7 @@
   "name": "free-web-tools",
   "version": "1.0.0",
   "private": true,
-  "description": "Free Web Tools Aggregator — Code snippets, video tutorials, community reviews",
+  "description": "Free Web Tools Aggregator \u2014 Code snippets, video tutorials, community reviews",
   "scripts": {
     "setup": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "predev": "node scripts/dev-cache-guard.mjs",
@@ -16,6 +16,9 @@
     "start": "concurrently -n frontend,backend -c cyan,yellow \"npm run start:frontend\" \"npm run start:backend\"",
     "start:frontend": "cd frontend && npm run start",
     "start:backend": "cd backend && npm run start",
+    "db:migrate": "cd backend && npm run migrate:dev",
+    "db:deploy": "cd backend && npm run migrate:deploy",
+    "db:status": "cd backend && npm run migrate:status",
     "db:push": "cd backend && npx prisma db push",
     "db:seed": "cd backend && npm run seed",
     "db:studio": "cd backend && npx prisma studio",

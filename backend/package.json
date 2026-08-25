@@ -1,13 +1,17 @@
 {
   "name": "fwt-backend",
   "version": "1.0.0",
-  "description": "Free Web Tools — Backend API",
+  "description": "Free Web Tools \u2014 Backend API",
   "main": "dist/server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "tsx prisma/seed.ts",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status",
     "test": "vitest run",
     "test:watch": "vitest"
   },

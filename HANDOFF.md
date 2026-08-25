@@ -58,13 +58,21 @@ FWT, sahibinin **TOYWES** ekosisteminin ilk projesi.
 
 ```bash
 npm run setup        # kök + frontend + backend bağımlılıkları
-cp backend/.env.example backend/.env   # DATABASE_URL, JWT_SECRET doldur
-npm run db:push && npm run db:seed
+cp backend/.env.example backend/.env       # DATABASE_URL, JWT_SECRET doldur
+cp frontend/.env.example frontend/.env.local
+npm run db:deploy && npm run db:seed
 npm run dev          # frontend :3000, backend :3001
 ```
 
 Tüm scriptler **kökten** çalışır: `dev`, `build`, `start`, `typecheck`, `lint`,
-`db:push`, `db:seed`, `db:studio`, `clean`. `:frontend` / `:backend` eki tek tarafı çalıştırır.
+`db:migrate`, `db:deploy`, `db:status`, `db:push`, `db:seed`, `db:studio`, `clean`.
+`:frontend` / `:backend` eki tek tarafı çalıştırır.
+
+**Şema değişikliği artık göç dosyasıyla yapılır** (2026-08-25). `schema.prisma`
+düzenledikten sonra `npm run db:migrate` çalıştır: dosyayı `backend/prisma/migrations/`
+altına yazar ve yerel veritabanına uygular. Üretimde yalnızca `npm run db:deploy`
+kullanılır. `db:push` scripti duruyor ama **sadece geliştirmede, hızlı deneme için**:
+şemayı zorla eşitlerken sütun düşürüp içindeki veriyi uyarısızca siler.
 
 Seed demo yöneticisi: `admin@freewebtools.dev` / `Admin123!@#`
 
@@ -190,7 +198,7 @@ Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
 |------|-----------|
 | **D · Video/görsel yükleme** | Depolama servisi (Cloudinary vb.) |
 | **F · E-posta doğrulama + bildirim** | SMTP sağlayıcı |
-| **H · Dağıtım** | Hosting + CI hedefi |
+| **H · Dağıtım** | Sunucu. **Kod tarafı hazır** (2026-08-25, aşağıya bak); sahibi ayın 5'inde sunucu kiralayacak. |
 
 **Commit haritası** — hangi iş nerede (`git show <hash>` ile ayrıntısına bak):
 
@@ -202,6 +210,68 @@ Dış servis/karar gerektirir — kullanıcı seçmeden başlama:
 | `2b9ff89` | **Grup C** — herkese açık profil sayfaları |
 
 Commit mesajları uzun ve gerekçeli yazıldı; bir kararın nedenini merak edersen önce oraya bak.
+
+**Yayına alma hazırlığı (2026-08-25) — Grup H'nin koda düşen kısmı.**
+
+Sahibi ayın 5'inde sunucu kiralayacak; sunucuyu beklemeden yapılabilen ve
+**beklendikçe zorlaşan** işler önden yapıldı. Beş parça var:
+
+**1. Göç dosyalarına geçiş — en kritik olanı.** Proje şemayı `prisma db push` ile
+uyguluyordu; hiç göç dosyası yoktu. `db push` şema farkını uygularken sütun düşürüp
+içindeki veriyi **uyarısızca** siler. Gerçek kullanıcılar snippet göndermeye başladıktan
+sonra bu geçişi yapmak veri kaybı riski taşırdı; veritabanında yalnızca tohum verisi
+varken bedava. `prisma migrate diff --from-empty` ile temel göç üretildi
+(`backend/prisma/migrations/00000000000000_init/`, 292 satır, `CREATE EXTENSION pg_trgm`
+ve üç GIN indeksi dahil), **boş bir veritabanına uygulanıp şemayla diff'i alınarak
+doğrulandı** (fark yok), sonra mevcut geliştirme veritabanı `migrate resolve --applied`
+ile işaretlendi — veri korundu (6 kullanıcı, 21 snippet, 15 yorum yerinde).
+
+**2. Ortam değişkeni doğrulaması (`backend/src/config/env.ts`) — bir güvenlik açığı kapandı.**
+`services/auth.ts` şunu yapıyordu: `process.env.JWT_SECRET || 'fallback-secret'`.
+`JWT_SECRET` tanımsız bir üretim sunucusunda tokenlar bu dizeyle imzalanırdı ve dize
+deponun içinde açıkça yazılı — **herkes kendine yönetici tokenı üretebilirdi.** Sessiz bir
+felaket, çünkü site sorunsuz çalışıyor gibi görünür. Artık tek bir doğrulama noktası var ve
+üretimde eksik `DATABASE_URL`/`JWT_SECRET`/`FRONTEND_URL`, örnek dosyadaki anahtarın aynısı,
+32 karakterden kısa anahtar ya da geçersiz `PORT` sunucuyu **açılışta durduruyor**, eksikleri
+tek tek listeleyerek. Geliştirmede akış bozulmuyor (uyarı verip devam ediyor).
+`app.ts`, `server.ts`, `lib/prisma.ts`, `middleware/auth.ts`, `services/auth.ts` bu modülü
+kullanıyor; `dotenv.config()` çağrıları tek yere indi. 9 test eklendi (backend 46 → 55).
+
+Yan bulgu: `middleware/auth.ts` doğrulamada `process.env.JWT_SECRET!` okuyordu, `services/auth.ts`
+ise imzalarken fallback'e düşüyordu — değişken tanımsızken imzalanan token asla doğrulanamıyordu.
+Artık ikisi de aynı değeri kullanıyor.
+
+**3. Temiz klonda derleme çöküyordu (`prisma.config.ts`).** Dosya `env("DATABASE_URL")`
+çağırıyordu ve bu değer **her prisma komutunda anında** çözülüyor. `.env`'i olmayan bir
+ortamda — Docker imaj derlemesi, CI, sunucuya taze klon — `prisma generate`
+"Cannot resolve environment variable" diye patlıyor, ardından `tsc` üretilmemiş Prisma
+istemcisi yüzünden çöküyordu. Yani proje sunucuda derlenemezdi. Değer artık isteğe bağlı
+okunuyor; bağlantı gerektiren komutlar yer tutucuya ulaşamayıp hata veriyor ve yer tutucunun
+içindeki `DATABASE_URL_TANIMLI_DEGIL` metni hatanın nedenini günlüğe yazıyor. Ayrıca
+backend'e `postinstall: prisma generate` eklendi — temiz klonda `npm ci` istemciyi üretsin.
+**Uçtan uca doğrulandı:** hiçbir ortam değişkeni olmayan bir kopyada `npm ci` + `npm run build`
+geçiyor, `NODE_ENV=production node dist/server.js` ise eksikleri listeleyip duruyor.
+
+**4. Tohumlama üretimde kilitlendi.** `prisma/seed.ts` ilk iş olarak `deleteMany()` ile tüm
+kullanıcıları, snippetleri ve yorumları siliyor. Yayına alma sırasında yanlışlıkla
+çalıştırılan tek bir `npm run seed` her şeyi götürürdü. `NODE_ENV=production` iken artık
+reddediyor; bilinçli onay `ALLOW_DESTRUCTIVE_SEED=yes-delete-everything`. Bunun sonucu
+olarak üretimde ilk yönetici seed'den gelemez — normal kayıt + tek satır SQL ile yapılır,
+adımı `DEPLOY.md` §7'de.
+
+**5. Belgeler ve paketleme.** `backend/.env.example` üretim değişkenleriyle tamamlandı,
+`frontend/.env.example` sıfırdan yazıldı (Next.js'in varsayılan `.gitignore`'ı `.env*`
+diyerek örnek dosyayı da gizliyordu; `!.env.example` istisnası eklendi). `backend/Dockerfile`
+ve `.dockerignore` yazıldı — çok katmanlı, kök olmayan kullanıcı, `/api/health` üzerinden
+HEALTHCHECK. `DEPLOY.md` baştan sona adım adım rehber: sunucu hazırlığı, PostgreSQL,
+göç, ilk yönetici, systemd birimleri, nginx + certbot, **yedekleme cron'u**, güncelleme
+akışı, kontrol listesi, sorun giderme.
+
+**Not:** Dockerfile bu makinede Docker kurulu olmadığı için yerelde derlenerek denenmedi;
+içeriği test edilmiş derleme adımlarıyla aynı ama ilk `docker build` çıktısı dikkatle
+okunmalı. `DEPLOY.md` içinde de böyle yazıyor.
+
+---
 
 **Grup G'de yapılanlar (arama ve ölçek):**
 
@@ -370,10 +440,12 @@ sayfalar derlendikçe *birer birer* düşüyor. Log: `frontend/.next/dev/logs/ne
 → `Failed to restore task data`. **Çözüm:** `npm run clean && npm run dev`.
 `predev` guard'ı (`scripts/dev-cache-guard.mjs`) build-sonrası-dev durumunu otomatik yakalıyor.
 
-**2b. Prisma önizleme özelliği + `db push` ile eklenti kurulabiliyor.** Migration dosyası
-olmadan da `datasource db { extensions = [pg_trgm] }` + `previewFeatures = ["postgresqlExtensions"]`
-eklentiyi kuruyor ve `@@index(..., type: Gin)` indeksleri oluşturuyor. Bu proje migration
-kullanmadığı için tek yol bu; ham SQL yazmaya kalkma.
+**2b. `pg_trgm` eklentisi ve GIN indeksleri şemadan yönetiliyor, ham SQL'den değil.**
+`datasource db { extensions = [pg_trgm] }` + `previewFeatures = ["postgresqlExtensions"]`
+ikilisi eklentiyi kuruyor ve `@@index(..., type: Gin)` indekslerini üretiyor. Göç dosyasına
+da `CREATE EXTENSION IF NOT EXISTS "pg_trgm";` olarak doğru şekilde düşüyor — elle SQL
+yazmaya kalkma. **Not:** `CREATE EXTENSION` süper kullanıcı yetkisi ister; kiralanan bir
+sunucuda göçten önce `psql` ile bir kez elle kurulması gerekebilir (bkz. `DEPLOY.md` §3).
 
 **2a. Prisma'da `onDelete` belirtmezsen zorunlu ilişkilerde varsayılan `Restrict`tir.**
 `ContributionHistory.snippet` böyleydi ve **onaylanmış snippet silinemiyordu** — moderasyondan
@@ -431,6 +503,20 @@ gerçek zamanlı bekleyip `Page.captureScreenshot` almak. Ayrıca önizleme ifra
 `Input.dispatchMouseEvent` içine ulaşmaz, `Target.attachToTarget` ile çerçevenin kendi
 oturumuna bağlanman gerekir.
 
+**10. `NEXT_PUBLIC_*` değişkenleri derleme anında koda gömülür.** Sunucuda `.env.local`
+değiştirip yalnızca servisi yeniden başlatmak hiçbir şey değiştirmez; `npm run build`
+tekrar çalışmalı. Aynı nedenle bu değişkenlere asla gizli bir değer yazma — tarayıcıya gider.
+
+**11. Frontend derlemesi devDependencies'e muhtaç.** `prebuild` betiği önizleme çalışma
+zamanını esbuild ile üretiyor ve esbuild bir devDependency; ayrıca çıktı
+(`frontend/public/preview/`) gitignore'lu, yani sunucuda üretilmek zorunda. Sunucuda
+`npm ci --omit=dev` **kullanma**, derleme kırılır.
+
+**12. `npm audit` üç yüksek uyarı gösteriyor, düzeltme denemesi zarar verir.** Uyarı
+`prisma` CLI'ın yapılandırma okuyucusundaki `deepmerge-ts`ten geliyor ve yalnızca kendi
+`prisma.config.ts` dosyamız işlenirken tetiklenebilir — dışarıdan gelen veriye dokunmuyor.
+`npm audit fix --force` prisma'yı 6.12'ye düşürür; yapma.
+
 ---
 
 ## 10. İki asistan nasıl çalışsın
@@ -453,6 +539,9 @@ oturumuna bağlanman gerekir.
 | Dosya | İçerik |
 |-------|--------|
 | `README.md` | Kurulum, scriptler, API özeti, sorun giderme |
+| `DEPLOY.md` | Yayına alma: sunucu kurulumu, göç, systemd, nginx, yedekleme, kontrol listesi |
+| `backend/src/config/env.ts` | Ortam değişkenlerinin **tek** doğrulama noktası |
+| `backend/prisma/migrations/` | Şema geçmişi — elle düzenlenmez, `db:migrate` üretir |
 | `frontend/AGENTS.md` | Next.js 16 uyarısı |
 | `frontend/src/lib/constants.ts` | Kategoriler, 13 aracın metadata'sı, `ready` bayrakları |
 | `frontend/src/app/globals.css` | Tasarım token'larının **tek** kaynağı |

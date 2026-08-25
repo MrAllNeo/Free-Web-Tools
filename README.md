@@ -83,7 +83,7 @@ Snippet cards and code panels are styled like terminal windows, right down to th
 
 ## Getting started
 
-**Prerequisites:** Node.js 18+, PostgreSQL 14+
+**Prerequisites:** Node.js 20.9+, PostgreSQL 14+
 
 ```bash
 git clone git@github.com:MrAllNeo/Free-Web-Tools.git
@@ -93,14 +93,19 @@ npm run setup                      # install root, frontend and backend deps
 
 cp backend/.env.example backend/.env
 #   → fill in DATABASE_URL and JWT_SECRET
+cp frontend/.env.example frontend/.env.local
 
-npm run db:push                    # create the tables
+npm run db:deploy                  # apply migrations, create the tables
 npm run db:seed                    # load demo users and snippets
 
 npm run dev                        # frontend :3000, backend :3001
 ```
 
 The seed creates a demo admin account: `admin@freewebtools.dev` / `Admin123!@#`.
+It refuses to run when `NODE_ENV=production`, because its first act is to delete
+every user, snippet and comment.
+
+To deploy this on a real server, follow [DEPLOY.md](DEPLOY.md).
 
 ### All scripts
 
@@ -114,7 +119,10 @@ Run these from the repository root — each one delegates to the right workspace
 | `npm test` | Vitest across frontend and backend (append `:frontend` / `:backend` for one side) |
 | `npm run typecheck` | `tsc --noEmit` across frontend and backend |
 | `npm run lint` | ESLint over the frontend |
-| `npm run db:push` | Sync the Prisma schema to the database |
+| `npm run db:migrate` | Create a migration from schema changes and apply it (development) |
+| `npm run db:deploy` | Apply pending migrations without generating new ones (production) |
+| `npm run db:status` | Show which migrations have been applied |
+| `npm run db:push` | Force the schema onto the database — **development only**, it can drop columns and their data without warning |
 | `npm run db:seed` | Reset and reload demo data |
 | `npm run db:studio` | Open Prisma Studio to browse the database |
 | `npm run clean` | Delete `frontend/.next` and `backend/dist` |

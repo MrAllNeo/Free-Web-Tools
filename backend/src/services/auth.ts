@@ -2,9 +2,12 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { AuthUser } from '../middleware/auth';
+import { env } from '../config/env';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+// Anahtar ve süre doğrulaması config/env içinde yapılıyor: üretimde eksik ya da
+// zayıf bir JWT_SECRET sunucuyu açılışta durdurur, sessizce varsayılana düşmez.
+const JWT_SECRET = env.JWT_SECRET;
+const JWT_EXPIRES_IN = env.JWT_EXPIRES_IN;
 const SALT_ROUNDS = 12;
 
 export async function hashPassword(password: string): Promise<string> {

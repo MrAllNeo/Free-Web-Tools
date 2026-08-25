@@ -5,7 +5,31 @@ import { prisma } from '../src/lib/prisma';
 
 const SALT_ROUNDS = 12;
 
+/**
+ * Tohumlama yıkıcıdır: aşağıdaki `deleteMany` çağrıları veritabanındaki HER ŞEYİ
+ * siler. Geliştirmede istenen budur, üretimde felakettir — yayına alma sırasında
+ * yanlışlıkla çalıştırılan tek bir `npm run seed` tüm kullanıcıları ve
+ * snippet'leri götürürdü. Bu yüzden üretimde bilinçli bir onay olmadan çalışmaz.
+ */
+function assertSeedingIsSafe(): void {
+  if (process.env.NODE_ENV !== 'production') return;
+
+  if (process.env.ALLOW_DESTRUCTIVE_SEED === 'yes-delete-everything') {
+    console.warn('⚠️  Üretim ortamında yıkıcı tohumlama açıkça onaylandı.');
+    return;
+  }
+
+  console.error(
+    '⛔ NODE_ENV=production iken tohumlama reddedildi.\n' +
+      '   Bu betik tüm kullanıcıları, snippetleri ve yorumları siler.\n' +
+      '   Gerçekten istiyorsan: ALLOW_DESTRUCTIVE_SEED=yes-delete-everything npm run seed'
+  );
+  process.exit(1);
+}
+
 async function main() {
+  assertSeedingIsSafe();
+
   console.log('🌱 Seeding database...');
 
   // Clean existing data

@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
+import { env } from './config/env';
 import { authRouter } from './routes/auth';
 import { snippetRouter } from './routes/snippets';
 import { userRouter } from './routes/users';
@@ -13,8 +13,6 @@ import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimit';
 import { logger } from './utils/logger';
 
-dotenv.config();
-
 const app = express();
 
 /**
@@ -25,14 +23,14 @@ const app = express();
  * Varsayılan kapalı: vekil yokken bu başlığa güvenmek, istemcinin kendi IP'sini
  * uydurup sınırı aşmasına izin verirdi.
  */
-if (process.env.TRUST_PROXY) {
-  app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
+if (env.TRUST_PROXY !== null) {
+  app.set('trust proxy', env.TRUST_PROXY);
 }
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: env.FRONTEND_URL,
   credentials: true,
 }));
 

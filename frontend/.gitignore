@@ -35,6 +35,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Örnek dosya bilinçli olarak depoda: yeni bir kurulumda hangi değişkenlerin
+# gerektiğini gösteriyor. Yalnızca yer tutucu değerler içerir.
+!.env.example
 
 # vercel
 .vercel
