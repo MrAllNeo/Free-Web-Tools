@@ -15,9 +15,14 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin", "latin-ext"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'http://localhost:3000');
+
 export const metadata: Metadata = {
   // Alt sayfalardaki göreli canonical adreslerinin çözülebilmesi için gerekli.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Free Web Tools — Kodu gör, videoda çalışırken izle",
     template: "%s | Free Web Tools",
