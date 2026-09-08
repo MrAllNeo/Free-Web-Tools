@@ -9,8 +9,11 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: [
         '/admin',
-        '/profile',
         '/auth/',
+        '/my',
+        // Yalnızca oturum sahibinin kendi profil ayar sayfası; herkese açık
+        // /profile/<username> sayfaları dizine girebilmeli.
+        '/profile$',
         '/snippets/new',
         // Kısa linkler yönlendirmedir, dizine girmemeli.
         '/s/',
