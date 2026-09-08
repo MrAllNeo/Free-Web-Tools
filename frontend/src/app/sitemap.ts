@@ -1,7 +1,10 @@
 import type { MetadataRoute } from 'next';
 import { API_URL, SNIPPET_CATEGORIES, TOOLS } from '@/lib/constants';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'http://localhost:3000');
 
 interface SitemapSnippet {
   slug: string;
