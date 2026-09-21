@@ -34,6 +34,10 @@ export interface AppEnv {
   /** `app.set('trust proxy', ...)` değeri; vekil yoksa null. */
   TRUST_PROXY: number | string | null;
   LOG_LEVEL: string;
+  /** MP4 Avcısı servis bağlantısı; üçü birlikte verildiğinde özellik etkinleşir. */
+  MP4_SERVICE_URL: string | null;
+  MP4_SERVICE_USER: string | null;
+  MP4_SERVICE_PASSWORD: string | null;
 }
 
 /**
@@ -82,6 +86,27 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     problems.push(`PORT geçerli bir port numarası değil: ${rawPort}`);
   }
 
+  const mp4ServiceUrl = source.MP4_SERVICE_URL?.trim() || null;
+  const mp4ServiceUser = source.MP4_SERVICE_USER?.trim() || null;
+  const mp4ServicePassword = source.MP4_SERVICE_PASSWORD?.trim() || null;
+  const mp4Parts = [mp4ServiceUrl, mp4ServiceUser, mp4ServicePassword];
+  if (mp4Parts.some(Boolean) && !mp4Parts.every(Boolean)) {
+    problems.push(
+      'MP4_SERVICE_URL, MP4_SERVICE_USER ve MP4_SERVICE_PASSWORD birlikte tanımlanmalı.'
+    );
+  }
+  if (mp4ServiceUrl) {
+    try {
+      const parsed = new URL(mp4ServiceUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('unsupported protocol');
+      if (isProduction && parsed.protocol !== 'https:') {
+        problems.push('MP4_SERVICE_URL üretimde HTTPS kullanmalı.');
+      }
+    } catch {
+      problems.push('MP4_SERVICE_URL geçerli bir HTTP(S) adresi değil.');
+    }
+  }
+
   if (problems.length > 0) {
     throw new Error(
       `Ortam yapılandırması geçersiz (NODE_ENV=${nodeEnv}):\n` +
@@ -109,6 +134,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     FRONTEND_URL: frontendUrl || 'http://localhost:3000',
     TRUST_PROXY: trustProxy,
     LOG_LEVEL: source.LOG_LEVEL?.trim() || 'info',
+    MP4_SERVICE_URL: mp4ServiceUrl,
+    MP4_SERVICE_USER: mp4ServiceUser,
+    MP4_SERVICE_PASSWORD: mp4ServicePassword,
   });
 }
 

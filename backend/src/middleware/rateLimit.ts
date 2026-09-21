@@ -52,6 +52,22 @@ export const shortenLimiter = rateLimit({
   message: { error: 'Too many links shortened from this address. Try again later.' },
 });
 
+/** Uzak medya çözümlemesi pahalıdır; misafir kullanımına ayrı sınır uygularız. */
+export const mediaAnalyzeLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 60 * 1000,
+  limit: 12,
+  message: { error: 'Too many media analyses from this address. Try again later.' },
+});
+
+/** Kuyruk oluşturma/iptal işlemlerinin servisi doldurmasını önler. */
+export const mediaMutationLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  message: { error: 'Too many media operations from this address. Try again later.' },
+});
+
 /** Snippet ve yorum oluşturma gibi kimliği doğrulanmış yazma işlemleri. */
 export const writeLimiter = rateLimit({
   ...base,

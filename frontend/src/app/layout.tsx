@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s | Free Web Tools",
   },
   description:
-    "Frontend, backend ve güvenlik snippet'leri, video anlatımlar, topluluk puanları ve anında kullanılabilir 13 geliştirici aracı — tek platformda.",
+    "Frontend, backend ve güvenlik snippet'leri, video anlatımlar, topluluk puanları ve anında kullanılabilir 14 geliştirici aracı — tek platformda.",
   keywords: [
     "kod snippet",
     "web geliştirme",

@@ -60,4 +60,32 @@ describe('loadEnv', () => {
     expect(loadEnv({ ...productionBase, TRUST_PROXY: '1' }).TRUST_PROXY).toBe(1);
     expect(loadEnv({ ...productionBase, TRUST_PROXY: 'loopback' }).TRUST_PROXY).toBe('loopback');
   });
+
+  it('MP4 servis ayarlarının üçünü birlikte kabul eder', () => {
+    const result = loadEnv({
+      ...productionBase,
+      MP4_SERVICE_URL: 'https://mp4.example.com',
+      MP4_SERVICE_USER: 'service-user',
+      MP4_SERVICE_PASSWORD: 'service-password',
+    });
+    expect(result.MP4_SERVICE_URL).toBe('https://mp4.example.com');
+    expect(result.MP4_SERVICE_USER).toBe('service-user');
+  });
+
+  it('eksik MP4 servis ayarını reddeder', () => {
+    expect(() => loadEnv({
+      ...productionBase,
+      MP4_SERVICE_URL: 'https://mp4.example.com',
+      MP4_SERVICE_USER: 'service-user',
+    })).toThrow(/birlikte tanımlanmalı/);
+  });
+
+  it('üretimde şifresiz HTTP MP4 servis adresini reddeder', () => {
+    expect(() => loadEnv({
+      ...productionBase,
+      MP4_SERVICE_URL: 'http://mp4.example.com',
+      MP4_SERVICE_USER: 'service-user',
+      MP4_SERVICE_PASSWORD: 'service-password',
+    })).toThrow(/HTTPS/);
+  });
 });

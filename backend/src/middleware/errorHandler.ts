@@ -5,6 +5,8 @@ import { logger } from '../utils/logger';
 export interface AppError extends Error {
   statusCode?: number;
   code?: string;
+  retryable?: boolean;
+  diagnostic?: unknown;
 }
 
 export function errorHandler(
@@ -46,5 +48,12 @@ export function errorHandler(
   const statusCode = err.statusCode || 500;
   const message = statusCode === 500 ? 'Internal server error' : err.message;
 
-  res.status(statusCode).json({ error: message });
+  res.status(statusCode).json({
+    error: message,
+    ...(statusCode !== 500 && err.code ? { code: err.code } : {}),
+    ...(statusCode !== 500 && typeof err.retryable === 'boolean'
+      ? { retryable: err.retryable }
+      : {}),
+    ...(statusCode !== 500 && err.diagnostic ? { diagnostic: err.diagnostic } : {}),
+  });
 }

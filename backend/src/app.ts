@@ -9,6 +9,7 @@ import { linkRouter } from './routes/links';
 import { adminRouter } from './routes/admin';
 import { notificationRouter } from './routes/notifications';
 import { reportRouter } from './routes/reports';
+import { mediaRouter } from './routes/media';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimit';
 import { logger } from './utils/logger';
@@ -63,6 +64,7 @@ app.use('/api/links', linkRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/reports', reportRouter);
+app.use('/api/media', mediaRouter);
 
 // 404 handler
 app.use((_req, res) => {

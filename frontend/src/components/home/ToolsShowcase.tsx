@@ -23,8 +23,8 @@ export function ToolsShowcase() {
   const [activeTab, setActiveTab] = useState<string>(LIVE_DEMOS[0].tab);
   const active = LIVE_DEMOS.find((d) => d.tab === activeTab) ?? LIVE_DEMOS[0];
 
-  // Izgarada ilk sekiz araç gösteriliyor; tamamı /tools sayfasında.
-  const gridTools = TOOLS.slice(0, 8);
+  // Yeni sunucu aracını ana sayfada görünür tut; tamamı /tools sayfasında.
+  const gridTools = [...TOOLS.slice(0, 7), TOOLS_BY_SLUG['mp4-avcisi']];
 
   return (
     <section id="tools" className="py-16">
