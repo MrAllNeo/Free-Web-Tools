@@ -18,8 +18,8 @@ export default function LinkShortenerPage() {
       tool={tool}
       note={
         <>
-          Bu araç, listedeki tek <strong className="text-fg">sunucu taraflı</strong> araçtır — kısa
-          kodun bir yerde saklanması gerekiyor. Kötüye kullanımı sınırlamak için yerel/iç ağ
+          Bu araç <strong className="text-fg">sunucu tarafında</strong> çalışır — kısa kodun bir
+          yerde saklanması gerekiyor. Kötüye kullanımı sınırlamak için yerel/iç ağ
           adresleri ve başka kısaltma servislerinin linkleri reddedilir. Süre sınırı seçersen link o
           tarihten sonra otomatik olarak geçersiz olur.
         </>

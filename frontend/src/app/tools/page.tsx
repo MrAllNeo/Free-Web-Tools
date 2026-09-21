@@ -19,8 +19,9 @@ export default function ToolsIndexPage() {
           Geliştirici <span className="text-green">araçları</span>
         </h1>
         <p className="text-muted text-[15px] max-w-[560px] mt-4">
-          Kayıt gerekmez, veri sunucuya gitmez. {TOOLS.length} aracın{' '}
-          {TOOLS.filter((t) => !t.needsBackend).length} tanesi tamamen tarayıcında çalışır.
+          Kayıt gerekmez. {TOOLS.length} aracın{' '}
+          {TOOLS.filter((t) => !t.needsBackend).length} tanesi veriyi sunucuya göndermeden,
+          tamamen tarayıcında çalışır.
         </p>
       </div>
 

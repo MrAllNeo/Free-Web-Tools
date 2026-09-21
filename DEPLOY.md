@@ -120,6 +120,11 @@ NODE_ENV=production
 PORT=3001
 # nginx arkasında çalışacağı için gerçek istemci IP'si başlıktan gelir.
 TRUST_PROXY=1
+
+# MP4 Avcısı entegrasyonu — yalnız backend'de tutulur, Git'e yazılmaz.
+MP4_SERVICE_URL="https://mp4-servis-adresiniz.example.com"
+MP4_SERVICE_USER="servis-kullanicisi"
+MP4_SERVICE_PASSWORD="servis-parolasi"
 ```
 
 > **Sunucu açılmıyorsa önce buraya bakın.** Üretimde eksik ya da zayıf bir değer
@@ -127,6 +132,10 @@ TRUST_PROXY=1
 > `JWT_SECRET`: örnek dosyadaki değer olduğu gibi bırakılırsa reddedilir, çünkü o
 > dize deponun içinde yazılı — kullanılsaydı herkes kendine yönetici tokenı
 > üretebilirdi.
+
+> **MP4 Avcısı:** Üç `MP4_SERVICE_*` değeri birlikte verilmelidir. FWT backend'i
+> medya servisine HTTP Basic Auth ile bağlanır; kullanıcı adı ve parola hiçbir
+> `NEXT_PUBLIC_` değişkenine konmaz ve tarayıcıya gönderilmez.
 
 ### Frontend
 

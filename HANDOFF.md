@@ -12,7 +12,7 @@
 
 ## 1. Proje nedir
 
-**free/web/tools (FWT)** — video anlatımlı kod snippet platformu + 13 bağımsız geliştirici aracı.
+**free/web/tools (FWT)** — video anlatımlı kod snippet platformu + 14 bağımsız geliştirici aracı.
 
 Ürün fikri: Stack Overflow cevabı ile YouTube eğitimi arasındaki boşluğu kapatmak. Kullanıcı hem
 kodu alır hem de birinin o kodu neden öyle yazdığını anlattığını izler.
@@ -24,7 +24,7 @@ Dört bölüm var:
 | 01 | Frontend | UI bileşenleri, CSS efektleri | **Canlı** — kod iframe'de çalışır |
 | 02 | Backend | Auth, API pattern'leri, DB şemaları | Video veya görsel |
 | 03 | Hacking | Pentest, zafiyet analizi | Video veya görsel — **asla çalıştırılmaz** |
-| 04 | Tools | 13 bağımsız araç | Anında, hesap gerekmez |
+| 04 | Tools | 14 bağımsız araç | Anında, hesap gerekmez |
 
 FWT, sahibinin **TOYWES** ekosisteminin ilk projesi.
 
@@ -173,8 +173,8 @@ için hesap sayfaları `/my/...` altında duruyor.
 
 Tüm planlanan fazlar bitti (`FWT_TECH_STACK_BLUEPRINT.md` referans alındı):
 
-- ✅ **Faz 0-1-2** — Terminal tasarım sistemi, 7 UI primitifi, ana sayfa, 13 sayfanın tamamı yeni temada
-- ✅ **Faz 3** — 13 aracın hepsi canlı
+- ✅ **Faz 0-1-2** — Terminal tasarım sistemi, 7 UI primitifi, ana sayfa, 14 sayfanın tamamı yeni temada
+- ✅ **Faz 3** — 14 aracın hepsi canlı
 - ✅ **Faz 4** — Yorumlar+puanlama, beğeni/kaydetme, moderasyon, analitik, link kısaltma
 - ✅ **Faz 5** — `sitemap.ts`, `robots.ts`, sayfa bazında metadata
 
@@ -558,7 +558,7 @@ ezmez, yani birim dosyasındaki `Environment=NODE_ENV=production` `.env`e üstü
 | `backend/src/config/env.ts` | Ortam değişkenlerinin **tek** doğrulama noktası |
 | `backend/prisma/migrations/` | Şema geçmişi — elle düzenlenmez, `db:migrate` üretir |
 | `frontend/AGENTS.md` | Next.js 16 uyarısı |
-| `frontend/src/lib/constants.ts` | Kategoriler, 13 aracın metadata'sı, `ready` bayrakları |
+| `frontend/src/lib/constants.ts` | Kategoriler, 14 aracın metadata'sı, `ready` bayrakları |
 | `frontend/src/app/globals.css` | Tasarım token'larının **tek** kaynağı |
 | `frontend/src/lib/preview.ts` | Canlı önizleme kuralları (`canRenderLive`, sandbox) |
 | `backend/prisma/schema.prisma` | Veri modeli |

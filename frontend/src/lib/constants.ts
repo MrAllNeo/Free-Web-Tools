@@ -67,7 +67,7 @@ export const SORT_OPTIONS = [
 ] as const;
 
 /**
- * Utilities bölümü — 13 bağımsız araç.
+ * Utilities bölümü — 14 bağımsız araç.
  * `ready` false olanlar listede "yakında" olarak gösterilir; sayfası yazıldıkça true olur.
  */
 export interface ToolMeta {
@@ -215,6 +215,17 @@ export const TOOLS: ToolMeta[] = [
     needsBackend: true,
     ready: true,
     keywords: ['link kısaltma', 'url shortener', 'kısa link'],
+  },
+  {
+    slug: 'mp4-avcisi',
+    name: 'MP4 Avcısı',
+    glyph: 'MP4',
+    short: 'Video bağlantısı → MP4',
+    description:
+      'Herkese açık video sayfalarını analiz eder, mevcut kaliteyi seçip MP4 dosyasını hazırlar.',
+    needsBackend: true,
+    ready: true,
+    keywords: ['mp4 indir', 'video indir', 'video bağlantısı mp4', 'mp4 avcısı'],
   },
 ];
 

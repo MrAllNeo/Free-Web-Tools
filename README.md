@@ -23,7 +23,7 @@ Most code-sharing sites give you a wall of text with no context, or a video with
 - **📹 Every snippet has a video** — contributors record a walkthrough (YouTube embed or direct upload) alongside the code they publish.
 - **🧪 Frontend code actually runs** — not a read-only gist. Snippets render live in a sandboxed iframe you can reload and open fullscreen. React and TSX are compiled in the browser, so components are interactive, not screenshots. Sharing only a CSS class or a script? Add a few lines of demo markup and the preview works anyway.
 - **🛡️ Hacking content is educational-only** — locked from execution, reviewed before publishing, with automated flagging for anything resembling malware or exploits.
-- **🧰 Instant utilities, zero friction** — thirteen tools that need no account and, for twelve of them, never send your data to a server.
+- **🧰 Instant utilities, zero friction** — fourteen tools that need no account; twelve run entirely in your browser.
 - **🌍 Built by and for the community** — contributors earn reputation for sharing quality content.
 
 ## The four sections
@@ -37,7 +37,7 @@ Most code-sharing sites give you a wall of text with no context, or a video with
 
 ## The toolbox
 
-Thirteen single-purpose utilities, each on its own SEO-friendly route at `/tools/<slug>`.
+Fourteen single-purpose utilities, each on its own SEO-friendly route at `/tools/<slug>`.
 
 | Tool | Runs where |
 |------|-----------|
@@ -54,8 +54,9 @@ Thirteen single-purpose utilities, each on its own SEO-friendly route at `/tools
 | QR Code Generator | Browser |
 | Image to Base64 | Browser |
 | Link Shortener | Server |
+| MP4 Avcısı | Server proxy |
 
-All thirteen are live. Twelve run entirely in your browser — no account, no upload, no request leaves the page. Only the link shortener needs a server, because a short code has to be stored somewhere.
+All fourteen are live. Twelve run entirely in your browser — no account, no upload, no request leaves the page. The link shortener stores short codes on the API; MP4 Avcısı sends public, non-DRM video links through the API to the separately hosted media service without exposing its credentials to the browser.
 
 Passwords are generated with `crypto.getRandomValues` and rejection sampling — no modulo bias, no network round-trip, ever.
 
@@ -213,7 +214,7 @@ Posting a rating recalculates the snippet's average automatically, and an approv
 
 - [x] **Phase 1** — Design system, landing page, snippet archive and detail, auth flow
 - [x] **Phase 2** — Utilities section, first live tools
-- [x] **Phase 3** — All thirteen tools shipped
+- [x] **Phase 3** — All fourteen tools shipped
 - [x] **Phase 4** — Comments and ratings, likes and bookmarks, moderation queue, admin analytics, link shortener
 - [x] **Phase 5** — Sitemap, robots, per-page SEO metadata
 - [ ] **Next** — Video uploads, public profiles, newsletter, search at scale
