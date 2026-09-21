@@ -72,6 +72,16 @@ describe('loadEnv', () => {
     expect(result.MP4_SERVICE_USER).toBe('service-user');
   });
 
+  it('MP4 servisini sunucular-arası token ile kabul eder', () => {
+    const result = loadEnv({
+      ...productionBase,
+      MP4_SERVICE_URL: 'https://mp4.example.com',
+      MP4_SERVICE_TOKEN: 'server-to-server-secret',
+    });
+    expect(result.MP4_SERVICE_TOKEN).toBe('server-to-server-secret');
+    expect(result.MP4_SERVICE_USER).toBeNull();
+  });
+
   it('eksik MP4 servis ayarını reddeder', () => {
     expect(() => loadEnv({
       ...productionBase,

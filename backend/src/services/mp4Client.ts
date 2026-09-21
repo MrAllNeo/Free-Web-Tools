@@ -67,11 +67,14 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 }
 
 export function createMp4Client(
-  config: Pick<AppEnv, 'MP4_SERVICE_URL' | 'MP4_SERVICE_USER' | 'MP4_SERVICE_PASSWORD'>,
+  config: Pick<AppEnv,
+    'MP4_SERVICE_URL' | 'MP4_SERVICE_USER' | 'MP4_SERVICE_PASSWORD' | 'MP4_SERVICE_TOKEN'>,
   fetchImpl: FetchLike = fetch
 ): Mp4Client {
   const configured = Boolean(
-    config.MP4_SERVICE_URL && config.MP4_SERVICE_USER && config.MP4_SERVICE_PASSWORD
+    config.MP4_SERVICE_URL && (
+      config.MP4_SERVICE_TOKEN || (config.MP4_SERVICE_USER && config.MP4_SERVICE_PASSWORD)
+    )
   );
 
   const call = async (path: string, init: RequestInit = {}, timeoutMs = 95_000) => {
@@ -83,9 +86,9 @@ export function createMp4Client(
     }
 
     const base = config.MP4_SERVICE_URL!.replace(/\/$/, '');
-    const authorization = Buffer.from(
-      `${config.MP4_SERVICE_USER}:${config.MP4_SERVICE_PASSWORD}`
-    ).toString('base64');
+    const authorization = config.MP4_SERVICE_USER && config.MP4_SERVICE_PASSWORD
+      ? Buffer.from(`${config.MP4_SERVICE_USER}:${config.MP4_SERVICE_PASSWORD}`).toString('base64')
+      : null;
 
     let response: Response;
     try {
@@ -93,7 +96,11 @@ export function createMp4Client(
         ...init,
         headers: {
           Accept: 'application/json',
-          Authorization: `Basic ${authorization}`,
+          ...(config.MP4_SERVICE_TOKEN
+            ? { 'X-MP4-Internal-Token': config.MP4_SERVICE_TOKEN }
+            : authorization
+              ? { Authorization: `Basic ${authorization}` }
+              : {}),
           ...(init.body ? { 'Content-Type': 'application/json' } : {}),
           ...(init.headers || {}),
         },

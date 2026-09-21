@@ -5,6 +5,7 @@ const config = {
   MP4_SERVICE_URL: 'https://mp4.example.com/',
   MP4_SERVICE_USER: 'service-user',
   MP4_SERVICE_PASSWORD: 'super-secret',
+  MP4_SERVICE_TOKEN: null,
 };
 
 describe('MP4 service client', () => {
@@ -31,11 +32,35 @@ describe('MP4 service client', () => {
     });
   });
 
+  it('sunucular-arası tokenı özel başlıkta gönderir ve Basic Auth üretmez', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'ok' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const client = createMp4Client({
+      MP4_SERVICE_URL: 'https://mp4.example.com',
+      MP4_SERVICE_USER: null,
+      MP4_SERVICE_PASSWORD: null,
+      MP4_SERVICE_TOKEN: 'server-to-server-secret',
+    }, fetchMock);
+
+    await client.requestJson('/api/analyze');
+
+    const [, requestInit] = fetchMock.mock.calls[0];
+    expect(requestInit?.headers).toMatchObject({
+      'X-MP4-Internal-Token': 'server-to-server-secret',
+    });
+    expect(requestInit?.headers).not.toHaveProperty('Authorization');
+  });
+
   it('yapılandırma yoksa açık bir 503 hatası üretir', async () => {
     const client = createMp4Client({
       MP4_SERVICE_URL: null,
       MP4_SERVICE_USER: null,
       MP4_SERVICE_PASSWORD: null,
+      MP4_SERVICE_TOKEN: null,
     });
     await expect(client.requestJson('/api/analyze')).rejects.toMatchObject({
       statusCode: 503,

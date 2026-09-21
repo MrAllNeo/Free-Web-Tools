@@ -38,6 +38,7 @@ export interface AppEnv {
   MP4_SERVICE_URL: string | null;
   MP4_SERVICE_USER: string | null;
   MP4_SERVICE_PASSWORD: string | null;
+  MP4_SERVICE_TOKEN: string | null;
 }
 
 /**
@@ -89,10 +90,18 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   const mp4ServiceUrl = source.MP4_SERVICE_URL?.trim() || null;
   const mp4ServiceUser = source.MP4_SERVICE_USER?.trim() || null;
   const mp4ServicePassword = source.MP4_SERVICE_PASSWORD?.trim() || null;
-  const mp4Parts = [mp4ServiceUrl, mp4ServiceUser, mp4ServicePassword];
-  if (mp4Parts.some(Boolean) && !mp4Parts.every(Boolean)) {
+  const mp4ServiceToken = source.MP4_SERVICE_TOKEN?.trim() || null;
+  const hasBasicAuth = Boolean(mp4ServiceUser && mp4ServicePassword);
+  const hasPartialBasicAuth = Boolean(mp4ServiceUser || mp4ServicePassword) && !hasBasicAuth;
+  const hasMp4Auth = hasBasicAuth || Boolean(mp4ServiceToken);
+  if (hasPartialBasicAuth) {
     problems.push(
-      'MP4_SERVICE_URL, MP4_SERVICE_USER ve MP4_SERVICE_PASSWORD birlikte tanımlanmalı.'
+      'MP4_SERVICE_USER ve MP4_SERVICE_PASSWORD birlikte tanımlanmalı.'
+    );
+  }
+  if ((mp4ServiceUrl && !hasMp4Auth) || (!mp4ServiceUrl && hasMp4Auth)) {
+    problems.push(
+      'MP4_SERVICE_URL ile MP4_SERVICE_TOKEN veya Basic Auth bilgileri birlikte tanımlanmalı.'
     );
   }
   if (mp4ServiceUrl) {
@@ -137,6 +146,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     MP4_SERVICE_URL: mp4ServiceUrl,
     MP4_SERVICE_USER: mp4ServiceUser,
     MP4_SERVICE_PASSWORD: mp4ServicePassword,
+    MP4_SERVICE_TOKEN: mp4ServiceToken,
   });
 }
 
