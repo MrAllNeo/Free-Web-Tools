@@ -99,9 +99,28 @@ describe('loadEnv', () => {
     })).toThrow(/HTTPS/);
   });
 
-  it('SAHNE_SERVICE_URL kimlik doğrulaması olmadan tek başına kabul edilir', () => {
-    const result = loadEnv({ ...productionBase, SAHNE_SERVICE_URL: 'https://sahne.example.com' });
+  it('üretimde SAHNE_SERVICE_URL token ile birlikte kabul edilir', () => {
+    const result = loadEnv({
+      ...productionBase,
+      SAHNE_SERVICE_URL: 'https://sahne.example.com',
+      SAHNE_SERVICE_TOKEN: 'servis-anahtari',
+    });
     expect(result.SAHNE_SERVICE_URL).toBe('https://sahne.example.com');
+    expect(result.SAHNE_SERVICE_TOKEN).toBe('servis-anahtari');
+  });
+
+  it('üretimde tokensiz SAHNE_SERVICE_URL reddedilir', () => {
+    expect(() => loadEnv({
+      ...productionBase,
+      SAHNE_SERVICE_URL: 'https://sahne.example.com',
+    })).toThrow(/SAHNE_SERVICE_TOKEN/);
+  });
+
+  it('adres olmadan tek başına SAHNE_SERVICE_TOKEN reddedilir', () => {
+    expect(() => loadEnv({
+      ...productionBase,
+      SAHNE_SERVICE_TOKEN: 'servis-anahtari',
+    })).toThrow(/SAHNE_SERVICE_URL/);
   });
 
   it('SAHNE_SERVICE_URL verilmediğinde null olur', () => {

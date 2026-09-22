@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { createSahneClient, SahneServiceError } from './sahneClient';
 
 describe('Sahne Avcısı servis istemcisi', () => {
-  it('yapılandırılmışsa yalnızca adrese istek atar, kimlik başlığı eklemez', async () => {
+  it('token tanımlı değilse kimlik başlığı eklemez', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ results: [] }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
       })
     );
-    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com/' }, fetchMock);
+    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com/', SAHNE_SERVICE_TOKEN: null }, fetchMock);
 
     await client.requestJson('/api/search', {
       method: 'POST',
@@ -23,8 +23,26 @@ describe('Sahne Avcısı servis istemcisi', () => {
     expect(requestInit?.headers).not.toHaveProperty('X-Admin-Token');
   });
 
+  it('token tanımlıysa her isteği servis başlığıyla imzalar', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ results: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const client = createSahneClient(
+      { SAHNE_SERVICE_URL: 'https://sahne.example.com', SAHNE_SERVICE_TOKEN: 'servis-anahtari' },
+      fetchMock
+    );
+
+    await client.requestJson('/api/search', { method: 'POST', body: '{}' });
+
+    const [, requestInit] = fetchMock.mock.calls[0];
+    expect(requestInit?.headers).toMatchObject({ 'X-Sahne-Internal-Token': 'servis-anahtari' });
+  });
+
   it('yapılandırma yoksa açık bir 503 hatası üretir', async () => {
-    const client = createSahneClient({ SAHNE_SERVICE_URL: null });
+    const client = createSahneClient({ SAHNE_SERVICE_URL: null, SAHNE_SERVICE_TOKEN: null });
     await expect(client.requestJson('/api/search')).rejects.toMatchObject({
       statusCode: 503,
     });
@@ -37,7 +55,7 @@ describe('Sahne Avcısı servis istemcisi', () => {
         headers: { 'content-type': 'application/json' },
       })
     );
-    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com' }, fetchMock);
+    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com', SAHNE_SERVICE_TOKEN: null }, fetchMock);
 
     await expect(client.requestJson('/api/search', { method: 'POST' })).rejects.toMatchObject({
       statusCode: 400,
@@ -49,7 +67,7 @@ describe('Sahne Avcısı servis istemcisi', () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ error: 'internal detail' }), { status: 500 })
     );
-    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com' }, fetchMock);
+    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com', SAHNE_SERVICE_TOKEN: null }, fetchMock);
 
     await expect(client.requestJson('/api/search', { method: 'POST' })).rejects.toBeInstanceOf(SahneServiceError);
     await expect(client.requestJson('/api/search', { method: 'POST' })).rejects.toMatchObject({ statusCode: 502 });
@@ -57,7 +75,7 @@ describe('Sahne Avcısı servis istemcisi', () => {
 
   it('ağ hatasında 503 üretir', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error('network down'));
-    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com' }, fetchMock);
+    const client = createSahneClient({ SAHNE_SERVICE_URL: 'https://sahne.example.com', SAHNE_SERVICE_TOKEN: null }, fetchMock);
     await expect(client.requestJson('/api/search', { method: 'POST' })).rejects.toMatchObject({ statusCode: 503 });
   });
 });

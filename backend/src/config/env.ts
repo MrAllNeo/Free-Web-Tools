@@ -39,8 +39,9 @@ export interface AppEnv {
   MP4_SERVICE_USER: string | null;
   MP4_SERVICE_PASSWORD: string | null;
   MP4_SERVICE_TOKEN: string | null;
-  /** Sahne Avcısı servis bağlantısı. Arama ucu (`/api/search`) kimlik doğrulaması istemediği için tek başına yeterli. */
+  /** Sahne Avcısı servis bağlantısı; üretimde token ile birlikte zorunlu. */
   SAHNE_SERVICE_URL: string | null;
+  SAHNE_SERVICE_TOKEN: string | null;
 }
 
 /**
@@ -119,6 +120,15 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   }
 
   const sahneServiceUrl = source.SAHNE_SERVICE_URL?.trim() || null;
+  const sahneServiceToken = source.SAHNE_SERVICE_TOKEN?.trim() || null;
+  // Sahne servisi kendi genel adresiyle yayında olduğu için bizim hız
+  // sınırlarımız onu korumaz; her çağrı kimlik doğrulamalı olmalı.
+  if (isProduction && sahneServiceUrl && !sahneServiceToken) {
+    problems.push('SAHNE_SERVICE_URL üretimde SAHNE_SERVICE_TOKEN ile birlikte tanımlanmalı.');
+  }
+  if (!sahneServiceUrl && sahneServiceToken) {
+    problems.push('SAHNE_SERVICE_TOKEN tanımlıysa SAHNE_SERVICE_URL de tanımlanmalı.');
+  }
   if (sahneServiceUrl) {
     try {
       const parsed = new URL(sahneServiceUrl);
@@ -163,6 +173,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     MP4_SERVICE_PASSWORD: mp4ServicePassword,
     MP4_SERVICE_TOKEN: mp4ServiceToken,
     SAHNE_SERVICE_URL: sahneServiceUrl,
+    SAHNE_SERVICE_TOKEN: sahneServiceToken,
   });
 }
 

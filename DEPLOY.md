@@ -126,8 +126,10 @@ MP4_SERVICE_URL="https://mp4-servis-adresiniz.example.com"
 MP4_SERVICE_USER="servis-kullanicisi"
 MP4_SERVICE_PASSWORD="servis-parolasi"
 
-# Sahne Avcısı entegrasyonu — arama ucu kimlik doğrulaması istemez, tek başına yeterli.
+# Sahne Avcısı entegrasyonu — üretimde ikisi birlikte zorunlu.
+# Token, servisteki SAHNE_INTERNAL_TOKEN ile aynı olmalı.
 SAHNE_SERVICE_URL="https://sahne-servis-adresiniz.example.com"
+SAHNE_SERVICE_TOKEN="uzun-rastgele-bir-deger"
 ```
 
 > **Sunucu açılmıyorsa önce buraya bakın.** Üretimde eksik ya da zayıf bir değer
@@ -141,9 +143,12 @@ SAHNE_SERVICE_URL="https://sahne-servis-adresiniz.example.com"
 > `NEXT_PUBLIC_` değişkenine konmaz ve tarayıcıya gönderilmez.
 
 > **Sahne Avcısı:** `SAHNE_SERVICE_URL` verilmezse `/tools/sahne-avcisi` sayfası
-> açılır ama arama "servis henüz yapılandırılmamış" hatası döner. Servisin kendi
-> yönetici uçlarına (FMHY eşitleme, indeksleme kuyruğu) FWT üzerinden erişim
-> yoktur — yalnızca herkese açık `/api/search` ucu proxy'lenir.
+> açılır ama arama "servis henüz yapılandırılmamış" hatası döner. Üretimde adres
+> `SAHNE_SERVICE_TOKEN` ile birlikte zorunludur ve bu değer servis tarafındaki
+> `SAHNE_INTERNAL_TOKEN` ile aynı olmalıdır; servis kendi genel adresiyle yayında
+> olduğu için FWT'nin hız sınırları onu tek başına korumaz. Servisin yönetici
+> uçlarına (FMHY eşitleme, indeksleme kuyruğu) FWT üzerinden erişim yoktur —
+> yalnızca `/api/search` ucu proxy'lenir.
 
 ### Frontend
 

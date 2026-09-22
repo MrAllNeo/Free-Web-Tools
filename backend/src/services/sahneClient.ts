@@ -30,12 +30,13 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 }
 
 /**
- * Sahne Avcısı'nın arama ucu (`/api/search`) kimlik doğrulaması istemez —
- * yalnızca adres yeterlidir. Yönetici korumalı uçlara (FMHY eşitleme,
- * indeksleme kuyruğu) bu istemci üzerinden erişilmez.
+ * Servis token tanımlıysa her istek `X-Sahne-Internal-Token` ile imzalanır;
+ * servis kendi genel adresiyle yayında olduğu için doğrudan çağrılara karşı
+ * korunması buna bağlı. Yönetici korumalı uçlara (FMHY eşitleme, indeksleme
+ * kuyruğu) bu istemci üzerinden erişilmez.
  */
 export function createSahneClient(
-  config: Pick<AppEnv, 'SAHNE_SERVICE_URL'>,
+  config: Pick<AppEnv, 'SAHNE_SERVICE_URL' | 'SAHNE_SERVICE_TOKEN'>,
   fetchImpl: FetchLike = fetch
 ): SahneClient {
   const configured = Boolean(config.SAHNE_SERVICE_URL);
@@ -55,6 +56,9 @@ export function createSahneClient(
           headers: {
             Accept: 'application/json',
             ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+            ...(config.SAHNE_SERVICE_TOKEN
+              ? { 'X-Sahne-Internal-Token': config.SAHNE_SERVICE_TOKEN }
+              : {}),
             ...(init.headers || {}),
           },
           signal: AbortSignal.timeout(timeoutMs),
