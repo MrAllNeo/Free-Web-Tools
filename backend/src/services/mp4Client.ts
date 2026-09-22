@@ -16,7 +16,8 @@ const SAFE_DIAGNOSTIC_KEYS = new Set([
   'stderr_bytes', 'errno', 'line', 'count', 'request_number', 'cookie_count', 'attempt',
   'job_id', 'operation_id', 'request_id', 'target_ref', 'engine_version', 'http_status', 'code',
   'exception_type', 'retryable', 'redirected', 'has_referer', 'user_agent_changed', 'enabled',
-  'causes', 'stack', 'file', 'function',
+  'causes', 'stack', 'file', 'function', 'strategy', 'strategy_reason', 'video_codec',
+  'audio_codec', 'duration', 'cost_weight', 'active_cost', 'admission_reason',
 ]);
 
 /** Uzak servisin tanı alanlarını ikinci kez süzer; URL/cookie/token gibi alanlar geçemez. */

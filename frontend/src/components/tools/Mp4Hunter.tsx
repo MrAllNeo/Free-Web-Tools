@@ -30,7 +30,11 @@ interface DownloadJob {
   retryable?: boolean;
   route: 'direct' | 'proton';
   queue_position?: number;
+  compatibility?: 'fast' | 'compatible';
+  strategy?: string;
 }
+
+type Compatibility = 'fast' | 'compatible';
 
 const STORAGE_KEY = 'fwt-mp4-job-v1';
 const ACTIVE_STATUSES = new Set(['queued', 'processing', 'paused']);
@@ -65,6 +69,7 @@ export function Mp4Hunter() {
   const [url, setUrl] = useState('');
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [quality, setQuality] = useState('');
+  const [compatibility, setCompatibility] = useState<Compatibility>('fast');
   const [job, setJob] = useState<DownloadJob | null>(null);
   const [events, setEvents] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +138,7 @@ export function Mp4Hunter() {
       const response = await api.post<{ job: DownloadJob }>('/media/downloads', {
         analysis_id: analysis.id,
         height: quality ? Number(quality) : null,
+        compatibility,
       });
       setJob(response.job);
       localStorage.setItem(STORAGE_KEY, response.job.id);
@@ -231,6 +237,24 @@ export function Mp4Hunter() {
                 ))}
               </Select>
             </Field>
+            <Field
+              label="Dönüştürme"
+              htmlFor="mp4-compatibility"
+              className="flex-1 min-w-[200px]"
+              hint={compatibility === 'fast'
+                ? 'Kaynak biçimi korunur, mümkün olduğunca dönüştürme yapılmaz.'
+                : 'Her cihazda oynatılabilmesi için gerekirse H.264 + AAC olarak yeniden kodlanır.'}
+            >
+              <Select
+                id="mp4-compatibility"
+                tone="green"
+                value={compatibility}
+                onChange={(event) => setCompatibility(event.target.value as Compatibility)}
+              >
+                <option value="fast">Hızlı / Orijinal</option>
+                <option value="compatible">Uyumlu MP4</option>
+              </Select>
+            </Field>
             <Button type="button" variant="solid" onClick={startDownload} disabled={isStarting}>
               {isStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               MP4 hazırla
@@ -246,6 +270,8 @@ export function Mp4Hunter() {
               <p className="font-semibold text-[14px] break-words">{job.title}</p>
               <p className="font-mono text-[11.5px] text-dim mt-1">
                 {job.height ? `${job.height}p` : 'en iyi kalite'} · {job.route}
+                {job.compatibility === 'compatible' ? ' · uyumlu mp4' : ''}
+                {job.strategy ? ` · ${job.strategy.toLowerCase()}` : ''}
               </p>
             </div>
             <span className="font-mono text-[11.5px] text-green border border-green/30 rounded-xs px-2 py-1">
