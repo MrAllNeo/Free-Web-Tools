@@ -37,7 +37,7 @@ Most code-sharing sites give you a wall of text with no context, or a video with
 
 ## The toolbox
 
-Fourteen single-purpose utilities, each on its own SEO-friendly route at `/tools/<slug>`.
+Fifteen single-purpose utilities, each on its own SEO-friendly route at `/tools/<slug>`.
 
 | Tool | Runs where |
 |------|-----------|
@@ -55,8 +55,9 @@ Fourteen single-purpose utilities, each on its own SEO-friendly route at `/tools
 | Image to Base64 | Browser |
 | Link Shortener | Server |
 | MP4 Avcısı | Server proxy |
+| Sahne Avcısı | Server proxy |
 
-All fourteen are live. Twelve run entirely in your browser — no account, no upload, no request leaves the page. The link shortener stores short codes on the API; MP4 Avcısı sends public, non-DRM video links through the API to the separately hosted media service without exposing its credentials to the browser.
+All fifteen are live. Twelve run entirely in your browser — no account, no upload, no request leaves the page. The link shortener stores short codes on the API; MP4 Avcısı sends public, non-DRM video links through the API to the separately hosted media service without exposing its credentials to the browser. Sahne Avcısı proxies a screenshot to a separately hosted scene-matching service the same way; 18+ results stay hidden until the visitor explicitly confirms they're an adult, and the image is never written to disk.
 
 Passwords are generated with `crypto.getRandomValues` and rejection sampling — no modulo bias, no network round-trip, ever.
 

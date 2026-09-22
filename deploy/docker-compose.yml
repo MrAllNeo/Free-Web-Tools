@@ -1,0 +1,146 @@
+# ─── FWT — tek VPS üzerinde tüm yığın ─────────────────────────────────────────
+#
+# Beklenen dizin yerleşimi (üç depo yan yana):
+#
+#   /srv/fwt/
+#   ├── Free-Web-Tools/deploy/   <- bu dosya burada
+#   ├── mp4-avcisi/
+#   └── sahne-avcisi/
+#
+# Dışarıya YALNIZCA caddy açılır. Diğer servislerin `ports` tanımı yoktur;
+# yalnızca iç ağdan erişilebilirler. İki Python servisi böylece internetten
+# hiç görünmez — token ve hız sınırı bunun üstüne ikinci katman olarak kalır.
+
+name: fwt
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      FWT_DOMAIN: ${FWT_DOMAIN:?alan adi gerekli}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+      - backend
+    networks: [web]
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        # Derleme anında pakete gömülür; alan adi degisirse yeniden derle.
+        NEXT_PUBLIC_API_URL: https://${FWT_DOMAIN}/api
+        NEXT_PUBLIC_SITE_URL: https://${FWT_DOMAIN}
+    restart: unless-stopped
+    networks: [web]
+
+  backend:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fwt}:${POSTGRES_PASSWORD:?parola gerekli}@postgres:5432/${POSTGRES_DB:-fwt}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?en az 32 karakter gerekli}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      FRONTEND_URL: https://${FWT_DOMAIN}
+      # Caddy'nin arkasindayiz; gercek istemci IP'si X-Forwarded-For'dan gelir.
+      TRUST_PROXY: "1"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MP4_SERVICE_URL: http://mp4:8000
+      MP4_SERVICE_TOKEN: ${MP4_INTERNAL_TOKEN:?token gerekli}
+      SAHNE_SERVICE_URL: http://sahne:8080
+      SAHNE_SERVICE_TOKEN: ${SAHNE_INTERNAL_TOKEN:?token gerekli}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [web, internal]
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fwt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?parola gerekli}
+      POSTGRES_DB: ${POSTGRES_DB:-fwt}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fwt} -d ${POSTGRES_DB:-fwt}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  mp4:
+    build:
+      context: ../../mp4-avcisi
+    restart: unless-stopped
+    environment:
+      PORT: 8000
+      MP4_INTERNAL_TOKEN: ${MP4_INTERNAL_TOKEN:?token gerekli}
+      # Ciktilar bir saat sonra zaten siliniyor; disk tavani buna gore.
+      MP4_MAX_DISK_BYTES: ${MP4_MAX_DISK_BYTES:-4831838208}
+      # Imaj VPN'i acik geliyor. Taze bir kurulumda yapilandirilmis WireGuard
+      # yoksa Tor/privoxy bosuna ayaga kalkar; varsayilan kapali. WireGuard
+      # kurduysan 1 yap (bkz. mp4-avcisi README).
+      MP4_VPN_AUTO: ${MP4_VPN_AUTO:-0}
+    volumes:
+      - mp4-data:/app/.data
+    networks: [internal]
+
+  sahne:
+    build:
+      context: ../../sahne-avcisi
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      SAHNE_INTERNAL_TOKEN: ${SAHNE_INTERNAL_TOKEN:?token gerekli}
+      SAHNE_ADMIN_TOKEN: ${SAHNE_ADMIN_TOKEN:?token gerekli}
+      SAHNE_RATE_LIMIT: ${SAHNE_RATE_LIMIT:-60}
+      SAHNE_RATE_WINDOW: ${SAHNE_RATE_WINDOW:-60}
+      TRACE_MOE_API_KEY: ${TRACE_MOE_API_KEY:-}
+    volumes:
+      - sahne-data:/data
+    networks: [internal]
+
+  # Indeksleme worker'i. Ayni imaj, ayni SQLite dosyasi, farkli komut.
+  # Es zamanlilik ve alan adi basina aktarim sayisi icin bkz. sahne-avcisi README.
+  sahne-worker:
+    build:
+      context: ../../sahne-avcisi
+    restart: unless-stopped
+    command:
+      - sahne-worker
+      - --database=/data/sahne-avcisi.sqlite3
+      - --concurrency=${SAHNE_WORKER_CONCURRENCY:-3}
+      - --per-host=${SAHNE_WORKER_PER_HOST:-2}
+    environment:
+      SAHNE_DATA_DIR: /data
+    volumes:
+      - sahne-data:/data
+    depends_on:
+      - sahne
+    networks: [internal]
+
+networks:
+  # Caddy'nin gorebildigi taraf.
+  web:
+  # Yalnizca servisler arasi; disari cikisi olmayan tek bir dahili ag.
+  internal:
+
+volumes:
+  postgres-data:
+  sahne-data:
+  mp4-data:
+  caddy-data:
+  caddy-config:

@@ -13,6 +13,7 @@ const analyzeSchema = z.object({
 const downloadSchema = z.object({
   analysis_id: jobIdSchema,
   height: z.number().int().min(1).max(16384).nullable().optional(),
+  compatibility: z.enum(['fast', 'compatible']).optional(),
 });
 
 const stringValue = (value: unknown, max = 500) =>
@@ -53,6 +54,9 @@ function safeJob(value: unknown) {
     expires_at: numberValue(body.expires_at),
     route: body.route === 'proton' ? 'proton' : 'direct',
     queue_position: numberValue(body.queue_position),
+    compatibility: body.compatibility === 'compatible' ? 'compatible' : 'fast',
+    strategy: stringValue(body.strategy, 32),
+    cost_weight: numberValue(body.cost_weight),
   };
 }
 

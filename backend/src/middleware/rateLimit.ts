@@ -52,6 +52,18 @@ export const shortenLimiter = rateLimit({
   message: { error: 'Too many links shortened from this address. Try again later.' },
 });
 
+/**
+ * Sahne araması hem yerel indeksi tarar hem de bazen trace.moe'ye görsel
+ * gönderir; kötüye kullanımı ve büyük gövdeli isteklerin sık tekrarını
+ * sınırlamak için ayrı ve dar bir tavan.
+ */
+export const sceneSearchLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  message: { error: 'Too many scene searches from this address. Try again later.' },
+});
+
 /** Uzak medya çözümlemesi pahalıdır; misafir kullanımına ayrı sınır uygularız. */
 export const mediaAnalyzeLimiter = rateLimit({
   ...base,
