@@ -125,6 +125,9 @@ TRUST_PROXY=1
 MP4_SERVICE_URL="https://mp4-servis-adresiniz.example.com"
 MP4_SERVICE_USER="servis-kullanicisi"
 MP4_SERVICE_PASSWORD="servis-parolasi"
+
+# Sahne Avcısı entegrasyonu — arama ucu kimlik doğrulaması istemez, tek başına yeterli.
+SAHNE_SERVICE_URL="https://sahne-servis-adresiniz.example.com"
 ```
 
 > **Sunucu açılmıyorsa önce buraya bakın.** Üretimde eksik ya da zayıf bir değer
@@ -136,6 +139,11 @@ MP4_SERVICE_PASSWORD="servis-parolasi"
 > **MP4 Avcısı:** Üç `MP4_SERVICE_*` değeri birlikte verilmelidir. FWT backend'i
 > medya servisine HTTP Basic Auth ile bağlanır; kullanıcı adı ve parola hiçbir
 > `NEXT_PUBLIC_` değişkenine konmaz ve tarayıcıya gönderilmez.
+
+> **Sahne Avcısı:** `SAHNE_SERVICE_URL` verilmezse `/tools/sahne-avcisi` sayfası
+> açılır ama arama "servis henüz yapılandırılmamış" hatası döner. Servisin kendi
+> yönetici uçlarına (FMHY eşitleme, indeksleme kuyruğu) FWT üzerinden erişim
+> yoktur — yalnızca herkese açık `/api/search` ucu proxy'lenir.
 
 ### Frontend
 

@@ -98,4 +98,27 @@ describe('loadEnv', () => {
       MP4_SERVICE_PASSWORD: 'service-password',
     })).toThrow(/HTTPS/);
   });
+
+  it('SAHNE_SERVICE_URL kimlik doğrulaması olmadan tek başına kabul edilir', () => {
+    const result = loadEnv({ ...productionBase, SAHNE_SERVICE_URL: 'https://sahne.example.com' });
+    expect(result.SAHNE_SERVICE_URL).toBe('https://sahne.example.com');
+  });
+
+  it('SAHNE_SERVICE_URL verilmediğinde null olur', () => {
+    expect(loadEnv(productionBase).SAHNE_SERVICE_URL).toBeNull();
+  });
+
+  it('üretimde şifresiz HTTP Sahne Avcısı servis adresini reddeder', () => {
+    expect(() => loadEnv({
+      ...productionBase,
+      SAHNE_SERVICE_URL: 'http://sahne.example.com',
+    })).toThrow(/HTTPS/);
+  });
+
+  it('geçersiz SAHNE_SERVICE_URL adresini reddeder', () => {
+    expect(() => loadEnv({
+      ...productionBase,
+      SAHNE_SERVICE_URL: 'not-a-url',
+    })).toThrow(/geçerli bir HTTP/);
+  });
 });

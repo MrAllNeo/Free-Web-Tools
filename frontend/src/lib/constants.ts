@@ -227,6 +227,17 @@ export const TOOLS: ToolMeta[] = [
     ready: true,
     keywords: ['mp4 indir', 'video indir', 'video bağlantısı mp4', 'mp4 avcısı'],
   },
+  {
+    slug: 'sahne-avcisi',
+    name: 'Sahne Avcısı',
+    glyph: 'SAH',
+    short: 'Ekran görüntüsü → sahne',
+    description:
+      'Bir film, dizi veya anime ekran görüntüsünü yükle; kaynağı, bölümü ve zaman kodunu bul.',
+    needsBackend: true,
+    ready: true,
+    keywords: ['sahne bul', 'anime sahne arama', 'bu sahne hangi film', 'ekran görüntüsünden video bul', 'sahne avcısı'],
+  },
 ];
 
 export const TOOLS_BY_SLUG = Object.fromEntries(TOOLS.map((t) => [t.slug, t])) as Record<
