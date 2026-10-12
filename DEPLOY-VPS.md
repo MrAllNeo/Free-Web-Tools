@@ -1,35 +1,32 @@
 # Tek VPS üzerinde kurulum
 
-FWT yığını dört servisten oluşuyor ve üçü ayrı depoda duruyor. Bu rehber
-hepsini tek bir sunucuda, Docker Compose ve Caddy ile ayağa kaldırır.
+FWT yığını frontend, backend, Postgres ve ayrı depodaki MP4 Avcısı
+servisinden oluşuyor. Bu rehber hepsini tek bir sunucuda, Docker Compose ve
+Caddy ile ayağa kaldırır.
 
 Railway/Vercel kurulumu için [DEPLOY.md](DEPLOY.md)'ye bak. Bu dosya onun
 yerine geçmez, alternatifidir.
 
 ## Neden bu yerleşim
 
-İki Python servisi (MP4 Avcısı ve Sahne Avcısı) dışarıya **hiç açılmaz**.
-`docker-compose.yml` içinde yalnızca `caddy` servisinin `ports` tanımı var;
-diğerleri sadece iç ağdan erişilebilir. Servislerdeki token ve hız sınırı bunun
-yerine geçmez, üstüne ikinci katman olarak durur — bir gün birini dışarı açmak
-gerekirse ya da token sızarsa devreye girer.
+MP4 Avcısı servisi dışarıya **hiç açılmaz**. `docker-compose.yml` içinde
+yalnızca `caddy` servisinin `ports` tanımı var; diğerleri sadece iç ağdan
+erişilebilir. Servisteki token bunun yerine geçmez, üstüne ikinci katman olarak
+durur — bir gün dışarı açmak gerekirse ya da token sızarsa devreye girer.
 
 Tek alan adı kullanılır. Caddy `/api/*` isteklerini backend'e, geri kalanı
 frontend'e yönlendirir. Böylece CORS yapılandırması gerekmez.
 
 ## Gereken makine
 
-Ölçülen değerler (bkz. `sahne-avcisi/ARCHITECTURE.md`):
-
 | Kalem | İhtiyaç |
 |---|---|
-| Sahne indeksi (kamu malı arşivin tamamı, 20,7M kare) | ~830 MB RAM, ~1,7 GB disk |
 | MP4 Avcısı geçici dosyaları | 4,6 GB disk tavanı |
 | Postgres + Next.js + Express | ~1-1,5 GB RAM |
-| FFmpeg (indeksleme ve dönüştürme) | CPU'ya bağlı, çekirdek ister |
+| FFmpeg (dönüştürme) | CPU'ya bağlı, çekirdek ister |
 
-**Önerilen: 4 vCPU / 8 GB RAM / 80 GB SSD.** 2 vCPU / 4 GB ile başlanabilir ama
-indeks büyüdükçe RAM sıkışır.
+**Önerilen: 2 vCPU / 4 GB RAM / 40 GB SSD.** Dönüştürme yoğunlaşırsa CPU'yu
+artırmak RAM'i artırmaktan daha çok fayda sağlar.
 
 ## 1. Sunucuyu hazırla
 
@@ -56,7 +53,7 @@ sudo ufw enable
 
 ## 2. Depoları yan yana klonla
 
-Dizin yerleşimi önemli: `docker-compose.yml` diğer iki depoyu göreli yoldan
+Dizin yerleşimi önemli: `docker-compose.yml` MP4 Avcısı deposunu göreli yoldan
 derliyor.
 
 ```bash
@@ -64,7 +61,6 @@ sudo mkdir -p /srv/fwt && sudo chown deploy:deploy /srv/fwt
 cd /srv/fwt
 git clone https://github.com/MrAllNeo/Free-Web-Tools.git
 git clone https://github.com/MrAllNeo/mp4-avcisi.git
-git clone https://github.com/MrAllNeo/sahne-avcisi.git
 ```
 
 Sonuç:
@@ -72,8 +68,7 @@ Sonuç:
 ```
 /srv/fwt/
 ├── Free-Web-Tools/deploy/   <- compose buradan çalıştırılır
-├── mp4-avcisi/
-└── sahne-avcisi/
+└── mp4-avcisi/
 ```
 
 ## 3. DNS
@@ -95,7 +90,7 @@ openssl rand -hex 32
 ```
 
 Zorunlu olanlar: `FWT_DOMAIN`, `POSTGRES_PASSWORD`, `JWT_SECRET` (en az 32
-karakter), `MP4_INTERNAL_TOKEN`, `SAHNE_INTERNAL_TOKEN`, `SAHNE_ADMIN_TOKEN`.
+karakter), `MP4_INTERNAL_TOKEN`.
 Eksik bırakılırsa compose açılışta durur.
 
 ## 5. Başlat
@@ -124,33 +119,7 @@ docker compose ps
 curl -sS https://$FWT_DOMAIN/api/health
 ```
 
-## 6. İndeksi doldur
-
-Kurulum bittiğinde film/dizi indeksi **boştur** — anime tarafı trace.moe
-sayesinde hemen çalışır, film/dizi tarafı ise indekslediğin kadar çalışır.
-Kamu malı arşivinden içe aktar:
-
-```bash
-docker compose exec sahne sahne-import-archive \
-  --database /data/sahne-avcisi.sqlite3 --limit 100
-```
-
-Worker zaten sürekli çalışıyor; kuyruğa giren işleri kendisi işler. İlerlemeyi
-izlemek için:
-
-```bash
-docker compose logs -f sahne-worker
-docker compose exec sahne python -c "
-from pathlib import Path
-from sahne_avcisi.database import Database
-print(Database(Path('/data/sahne-avcisi.sqlite3')).stats())
-"
-```
-
-Kabaca film başına 1,5-2 dakika sürer. Arşivin tamamı (7.665 film) tek
-makinede günler alır; parti parti almak mantıklı.
-
-## 7. Yedekleme
+## 6. Yedekleme
 
 ```bash
 chmod +x deploy/backup.sh
@@ -163,16 +132,14 @@ Günlük çalıştırmak için crontab'a ekle:
 0 4 * * * /srv/fwt/Free-Web-Tools/deploy/backup.sh /srv/backups
 ```
 
-Betik Postgres dump'ı ve Sahne indeksini alır. İndeks worker tarafından sürekli
-yazıldığı için düz kopyalama yerine SQLite'ın kendi backup API'si kullanılır;
-çalışan yazarlarla tutarlı kopya veren tek yol bu.
+Betik Postgres dump'ını alır ve `BACKUP_KEEP_DAYS` günden (öntanımlı 14) eski
+yedekleri siler.
 
 ## Güncelleme
 
 ```bash
 cd /srv/fwt/Free-Web-Tools && git pull
 cd ../mp4-avcisi && git pull
-cd ../sahne-avcisi && git pull
 cd ../Free-Web-Tools/deploy
 docker compose build
 docker compose up -d
@@ -190,15 +157,6 @@ $FWT_DOMAIN` ile kontrol et. 80 portu dışarıya kapalıysa da başarısız olu
 **Backend açılışta duruyor.** Üretimde eksik veya zayıf bir değer varsa
 bilinçli olarak başlamaz ve eksiklerin listesini yazar: `docker compose logs
 backend`. En sık sebep 32 karakterden kısa `JWT_SECRET`.
-
-**Sahne araması 401 dönüyor.** `SAHNE_INTERNAL_TOKEN` iki tarafta da aynı
-olmalı. Compose ikisini de tek değişkenden okuduğu için normalde tutar; elle
-oynadıysan kontrol et.
-
-**Sahne servisinin kendi arayüzü açılmıyor.** Beklenen davranış: token
-tanımlıyken tarayıcı o başlığı gönderemediği için servis kendi arayüzünü
-sunmaz. Bu kurulumda servis yalnızca arka uçtur, arayüz FWT'nin
-`/tools/sahne-avcisi` sayfasıdır.
 
 **Disk doluyor.** En olası sebep MP4 Avcısı'nın geçici dosyaları. Tavanı
 `MP4_MAX_DISK_BYTES` belirler ve çıktılar bir saat sonra silinir; `docker

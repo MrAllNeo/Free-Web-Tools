@@ -10,7 +10,6 @@ import { adminRouter } from './routes/admin';
 import { notificationRouter } from './routes/notifications';
 import { reportRouter } from './routes/reports';
 import { mediaRouter } from './routes/media';
-import { sceneRouter, SCENE_JSON_BODY_LIMIT } from './routes/scene';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimit';
 import { logger } from './utils/logger';
@@ -39,13 +38,7 @@ app.use(cors({
 // Body parsing
 // 10 MB gereğinden fazlaydı: en büyük gövde bile bir snippet'in kodu + demo
 // markup'ı kadar. Küçük tutmak bellek tüketen isteklerin maliyetini düşürür.
-// Sahne Avcısı base64 ekran görüntüsü taşıdığı için bu genel sınırın dışında
-// tutulur (kendi 20 MB'lık ayrıştırıcısı aşağıda, route mount'undan önce
-// uygulanıyor) — diğer her uç 1 MB'ta kalır.
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/scene')) return next();
-  return express.json({ limit: '1mb' })(req, res, next);
-});
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging
@@ -72,7 +65,6 @@ app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/media', mediaRouter);
-app.use('/api/scene', express.json({ limit: SCENE_JSON_BODY_LIMIT }), sceneRouter);
 
 // 404 handler
 app.use((_req, res) => {

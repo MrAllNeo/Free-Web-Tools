@@ -13,17 +13,8 @@
 		-Server
 	}
 
-	# Sahne aramasi ekran goruntusunu base64 olarak tasir; backend bu uca ozel
-	# olarak 20 MB'lik ayristirici kullaniyor, buradaki tavan onun biraz ustu.
-	handle /api/scene/* {
-		request_body {
-			max_size 25MB
-		}
-		reverse_proxy backend:3001
-	}
-
-	# Geri kalan API uclari kucuk JSON gorur; buyuk govde kabul etmek gereksiz
-	# bir saldiri yuzeyi acar.
+	# API uclari kucuk JSON gorur; buyuk govde kabul etmek gereksiz bir
+	# saldiri yuzeyi acar.
 	handle /api/* {
 		request_body {
 			max_size 2MB
