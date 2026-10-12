@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { API_URL } from '@/lib/constants';
+import { SERVER_API_URL } from '@/lib/constants';
 
 interface SnippetMeta {
   title: string;
@@ -25,7 +25,7 @@ export async function generateMetadata({
   const { slug } = await params;
 
   try {
-    const response = await fetch(`${API_URL}/snippets/${encodeURIComponent(slug)}`, {
+    const response = await fetch(`${SERVER_API_URL}/snippets/${encodeURIComponent(slug)}`, {
       next: { revalidate: 300 },
     });
 

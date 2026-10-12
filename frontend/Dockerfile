@@ -42,9 +42,12 @@ ENV HOSTNAME=0.0.0.0
 
 # standalone çıktısı kendi minimal node_modules'ünü içinde taşır; public/ ve
 # static/ ayrıca kopyalanmalı çünkü standalone bunları dahil etmez.
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Sahiplik `node`'da olmalı: Next, sonradan üretilen sayfaların önbelleğini
+# .next/ altına yazar; root'a ait kalırsa her istekte EACCES hatası verir ve
+# önbellek hiç tutulmaz.
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
 USER node
 

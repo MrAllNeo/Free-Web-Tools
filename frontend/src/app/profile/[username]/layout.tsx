@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
-import { API_URL } from '@/lib/constants';
+import { SERVER_API_URL } from '@/lib/constants';
 
 interface ProfileMeta {
   user: { username: string; fullName?: string; bio?: string };
@@ -10,7 +10,7 @@ interface ProfileMeta {
 
 /** Aynı istek içinde iki kez çağrılır (metadata + layout); Next fetch'i tekilleştirir. */
 const fetchProfile = (username: string) =>
-  fetch(`${API_URL}/users/${encodeURIComponent(username)}`, { next: { revalidate: 300 } });
+  fetch(`${SERVER_API_URL}/users/${encodeURIComponent(username)}`, { next: { revalidate: 300 } });
 
 /**
  * Profil sayfası istemci bileşeni olduğu için metadata'yı bu layout üretiyor —
