@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL } from '@/lib/constants';
+import { SERVER_API_URL } from '@/lib/constants';
 import { Container } from '@/components/ui/Container';
 import { ButtonLink } from '@/components/ui/Button';
 
@@ -27,7 +27,7 @@ export default async function ShortLinkPage({
   let reason = 'Bu kısa link kullanılamıyor.';
 
   try {
-    const response = await fetch(`${API_URL}/links/${encodeURIComponent(slug)}`, {
+    const response = await fetch(`${SERVER_API_URL}/links/${encodeURIComponent(slug)}`, {
       cache: 'no-store',
     });
 

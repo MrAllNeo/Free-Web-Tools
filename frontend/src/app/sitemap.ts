@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { API_URL, SNIPPET_CATEGORIES, TOOLS } from '@/lib/constants';
+import { SERVER_API_URL, SNIPPET_CATEGORIES, TOOLS } from '@/lib/constants';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
   ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -19,7 +19,7 @@ interface SitemapSnippet {
  */
 async function fetchSnippets(): Promise<SitemapSnippet[]> {
   try {
-    const response = await fetch(`${API_URL}/snippets?limit=50&sort=latest`, {
+    const response = await fetch(`${SERVER_API_URL}/snippets?limit=50&sort=latest`, {
       next: { revalidate: 3600 },
     });
     if (!response.ok) return [];

@@ -12,6 +12,26 @@ import { logger } from '../utils/logger';
  * çalışmayan sunucu, sessizce herkese açık olan sunucudan iyidir.
  */
 
+/**
+ * Trafiği internete hiç çıkmayan adresler. Token'ın şifresiz gitmesini
+ * engelleyen HTTPS kuralı bunlarda anlamsız: Docker Compose'daki `mp4` gibi
+ * tek parçalı servis adları, Railway'in `*.railway.internal` özel ağı ve özel
+ * IP aralıkları yalnızca aynı makine ya da aynı özel ağ içinden çözülür.
+ */
+export function isPrivateNetworkHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host === '[::1]') return true;
+  if (!host.includes('.')) return true;
+  if (host.endsWith('.internal') || host.endsWith('.local')) return true;
+
+  const octets = host.split('.').map(Number);
+  if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o) || o < 0 || o > 255)) {
+    return false;
+  }
+  const [a, b] = octets;
+  return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+}
+
 /** Depoda, örneklerde ya da eski kodda geçmiş; yani gizli sayılamaz. */
 const KNOWN_INSECURE_SECRETS = new Set([
   'fallback-secret',
@@ -108,8 +128,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     try {
       const parsed = new URL(mp4ServiceUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('unsupported protocol');
-      if (isProduction && parsed.protocol !== 'https:') {
-        problems.push('MP4_SERVICE_URL üretimde HTTPS kullanmalı.');
+      if (isProduction && parsed.protocol !== 'https:' && !isPrivateNetworkHost(parsed.hostname)) {
+        problems.push('MP4_SERVICE_URL üretimde HTTPS kullanmalı (iç ağ adresleri hariç).');
       }
     } catch {
       problems.push('MP4_SERVICE_URL geçerli bir HTTP(S) adresi değil.');

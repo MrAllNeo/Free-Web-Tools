@@ -1,5 +1,14 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+/**
+ * Yalnızca sunucu tarafı istekler (kısa link yönlendirmesi, meta veriler,
+ * sitemap) için. Konteyner kurulumunda frontend backend'e iç ağdan ulaşır;
+ * genel adrese çıkıp aynı makineye geri dönmek bazı sağlayıcılarda çalışmaz ve
+ * o zaman bütün kısa linkler kırılır. Tanımsızsa tarayıcının kullandığı adrese
+ * düşer, yani Vercel kurulumu değişmez.
+ */
+export const SERVER_API_URL = process.env.API_INTERNAL_URL || API_URL;
+
 /** Snippet'lerin ait olabileceği kategoriler (DB'deki `category` alanı). */
 export const SNIPPET_CATEGORIES = [
   {

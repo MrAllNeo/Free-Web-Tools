@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadEnv } from './env';
+import { isPrivateNetworkHost, loadEnv } from './env';
 
 const productionBase = {
   NODE_ENV: 'production',
@@ -97,5 +97,39 @@ describe('loadEnv', () => {
       MP4_SERVICE_USER: 'service-user',
       MP4_SERVICE_PASSWORD: 'service-password',
     })).toThrow(/HTTPS/);
+  });
+
+  it('üretimde Docker iç ağındaki HTTP MP4 servisini kabul eder', () => {
+    // deploy/docker-compose.yml backend'e tam olarak bu adresi veriyor.
+    const result = loadEnv({
+      ...productionBase,
+      MP4_SERVICE_URL: 'http://mp4:8000',
+      MP4_SERVICE_TOKEN: 'x'.repeat(64),
+    });
+    expect(result.MP4_SERVICE_URL).toBe('http://mp4:8000');
+  });
+
+  it('üretimde Railway özel ağındaki HTTP MP4 servisini kabul eder', () => {
+    expect(() => loadEnv({
+      ...productionBase,
+      MP4_SERVICE_URL: 'http://mp4.railway.internal:8000',
+      MP4_SERVICE_TOKEN: 'x'.repeat(64),
+    })).not.toThrow();
+  });
+});
+
+describe('isPrivateNetworkHost', () => {
+  it('iç ağ adlarını ve özel IP aralıklarını tanır', () => {
+    for (const host of ['mp4', 'localhost', 'mp4.railway.internal', 'nas.local',
+      '10.0.0.5', '127.0.0.1', '172.16.0.1', '172.31.255.255', '192.168.1.10', '[::1]']) {
+      expect(isPrivateNetworkHost(host), host).toBe(true);
+    }
+  });
+
+  it('genel adresleri iç ağ saymaz', () => {
+    for (const host of ['mp4.example.com', 'example.internal.evil.com', '8.8.8.8',
+      '172.15.0.1', '172.32.0.1', '192.169.0.1', '10.0.0.256']) {
+      expect(isPrivateNetworkHost(host), host).toBe(false);
+    }
   });
 });

@@ -39,6 +39,11 @@ services:
         NEXT_PUBLIC_API_URL: https://${FWT_DOMAIN}/api
         NEXT_PUBLIC_SITE_URL: https://${FWT_DOMAIN}
     restart: unless-stopped
+    environment:
+      # Sunucu tarafi istekler (kisa link yonlendirmesi, meta veri, sitemap)
+      # backend'e ic agdan gitsin; genel alan adina cikip geri donmek bazi
+      # saglayicilarda calismaz.
+      API_INTERNAL_URL: http://backend:3001/api
     networks: [web]
 
   backend:
@@ -85,6 +90,9 @@ services:
     environment:
       PORT: 8000
       MP4_INTERNAL_TOKEN: ${MP4_INTERNAL_TOKEN:?token gerekli}
+      # Servis yalnizca bu Host basliklarini kabul eder. Backend ona `mp4`
+      # adiyla ulasiyor; bu olmadan her istek "Invalid host header" ile 400 doner.
+      MP4_ALLOWED_HOSTS: mp4,localhost,127.0.0.1
       # Ciktilar bir saat sonra zaten siliniyor; disk tavani buna gore.
       MP4_MAX_DISK_BYTES: ${MP4_MAX_DISK_BYTES:-4831838208}
       # Imaj VPN'i acik geliyor. Taze bir kurulumda yapilandirilmis WireGuard
